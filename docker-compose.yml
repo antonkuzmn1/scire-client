@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  react-app:
+    image: antonkuzmn1/storage-owner-client
+    container_name: storage-owner-client
+    build: .
+    ports:
+      - "3008:80"
+    restart: always
