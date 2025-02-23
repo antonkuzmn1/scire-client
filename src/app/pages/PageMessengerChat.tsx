@@ -1,10 +1,12 @@
-import React, {useCallback, useEffect, useReducer, useRef} from "react";
+import React, {ChangeEvent, useCallback, useEffect, useReducer, useRef} from "react";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
 import {apiOauth, apiScire} from "../../utils/api.ts";
 import Cookies from "js-cookie";
-import {useNavigate} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
+import {dateToString} from "../../utils/formatDate.ts";
+import {Send} from "@mui/icons-material";
 
 interface StorageFile {
     uuid: string;
@@ -81,6 +83,7 @@ interface Message {
     id: number;
     text: string;
     user_id: number;
+    userName: string;
     admin_id: number | null;
     ticket_id: Ticket['id'];
     admin_connected: boolean;
@@ -97,6 +100,7 @@ interface Ticket {
     status: 0 | 1 | 2
     statusText: 'Pending' | 'In progress' | 'Solved';
     user_id: number;
+    userName: string;
     admin_id: number | null;
     adminName: string;
     created_at: string | null;
@@ -111,17 +115,20 @@ interface State {
     ticketFiles: TicketFile[];
     messageFiles: MessageFile[];
     files: File[];
+    message: string;
 }
 
 type Action =
     | { type: 'SET_TICKET', payload: Ticket }
     | { type: 'SET_MESSAGES', payload: Message[] }
+    | { type: 'ADD_MESSAGE', payload: Message }
     | { type: 'SET_ADMINS', payload: Admin[] }
     | { type: 'SET_USERS', payload: User[] }
     | { type: 'SET_TICKET_FILES', payload: TicketFile[] }
     | { type: 'SET_MESSAGE_FILES', payload: MessageFile[] }
     | { type: 'ADD_FILE', payload: File | null }
-    | { type: 'DELETE_FILE', payload: number };
+    | { type: 'DELETE_FILE', payload: number }
+    | { type: 'SET_MESSAGE', payload: string };
 
 const defaultTicket: Ticket = {
     id: 0,
@@ -130,6 +137,7 @@ const defaultTicket: Ticket = {
     status: 0,
     statusText: 'Pending',
     user_id: 0,
+    userName: '',
     admin_id: null,
     adminName: '',
     created_at: null,
@@ -137,11 +145,14 @@ const defaultTicket: Ticket = {
 }
 
 const initialState: State = {
-    tickets: [],
-    dialog: null,
-    currentTicket: defaultTicket,
+    ticket: defaultTicket,
+    messages: [],
     admins: [],
+    users: [],
+    ticketFiles: [],
+    messageFiles: [],
     files: [],
+    message: "",
 }
 
 const reducer = (state: State, action: Action): State => {
@@ -155,6 +166,11 @@ const reducer = (state: State, action: Action): State => {
             return {
                 ...state,
                 messages: action.payload,
+            }
+        case 'ADD_MESSAGE':
+            return {
+                ...state,
+                messages: [...state.messages, action.payload],
             }
         case 'SET_ADMINS':
             return {
@@ -185,6 +201,11 @@ const reducer = (state: State, action: Action): State => {
             return {
                 ...state,
                 files: state.files.filter((_, i) => i !== action.payload),
+            }
+        case 'SET_MESSAGE':
+            return {
+                ...state,
+                message: action.payload,
             }
         default:
             return state;
@@ -220,26 +241,33 @@ const PageMessengerChat: React.FC = () => {
     const [state, localDispatch] = useReducer(reducer, initialState);
     const wsRef = useRef<WebSocket | null>(null);
     const navigate = useNavigate();
+    const {ticketId} = useParams();
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
-    const getTickets = useCallback(async () => {
+    const init = useCallback(async () => {
         dispatch(setAppLoading(true));
         try {
             const adminsResponse = await apiOauth.get("/admins/");
             localDispatch({type: "SET_ADMINS", payload: adminsResponse.data});
 
-            const response = await apiScire.get("/tickets/");
-            const data = response.data.map((ticket: Ticket) => {
+            const usersResponse = await apiOauth.get("/users/");
+            localDispatch({type: "SET_USERS", payload: usersResponse.data});
+
+            const ticketResponse = await apiScire.get(`/tickets/${ticketId}`);
+            const data = ticketResponse.data;
+            data.statusText = statusToText(data.status);
+            data.userName = userIdToName(data.user_id, usersResponse.data);
+            data.adminName = adminIdToName(data.admin_id, adminsResponse.data);
+            localDispatch({type: "SET_TICKET", payload: data});
+
+            const messagesResponse = await apiScire.get(`/messages/${ticketId}`);
+            const messages: Message[] = messagesResponse.data.map((message: Message) => {
                 return {
-                    ...ticket,
-                    statusText: statusToText(ticket.status),
-                    adminName: adminIdToName(ticket.admin_id, adminsResponse.data),
+                    ...message,
+                    userName: userIdToName(data.user_id, usersResponse.data),
                 }
-            })
-            data.sort((a: Ticket, b: Ticket) => {
-                return new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime()
             });
-            console.log(data)
-            localDispatch({type: "SET_TICKETS", payload: data});
+            localDispatch({type: "SET_MESSAGES", payload: messages});
         } catch (error: unknown) {
             if (error instanceof Error) {
                 dispatch(setAppError(error.message));
@@ -252,8 +280,33 @@ const PageMessengerChat: React.FC = () => {
     }, []);
 
     useEffect(() => {
-        getTickets().then();
+        init().then();
     }, [dispatch]);
+
+    const sendMessage = () => {
+        localDispatch({type: 'SET_MESSAGE', payload: ''});
+        const text = state.message.trim();
+        if (!text) {
+            dispatch(setAppError('Message text required'));
+        }
+
+        dispatch(setAppLoading(true));
+
+        const payload = {
+            action: 'send_message',
+            data: {
+                text,
+                ticket_id: ticketId,
+            }
+        }
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify(payload));
+        } else {
+            dispatch(setAppError("WebSocket error"));
+        }
+
+        dispatch(setAppLoading(false));
+    }
 
     // const createTicket = useCallback(() => {
     //     const title = state.currentTicket.title.trim();
@@ -323,74 +376,67 @@ const PageMessengerChat: React.FC = () => {
             wsRef.current.onmessage = (event: any) => {
                 const message = JSON.parse(event.data);
                 console.log(message);
-                // switch (message.action) {
-                //     case "create_ticket":
-                //         const data: Ticket = message.data;
-                //         data.statusText = statusToText(data.status);
-                //         data.adminName = adminIdToName(data.admin_id, state.admins);
-                //         localDispatch({
-                //             type: 'ADD_TICKET',
-                //             payload: message.data,
-                //         });
-                //         state.files.forEach(async (file: File) => {
-                //             const formData = new FormData();
-                //             formData.append("file", file);
-                //             try {
-                //                 const response = await apiStorage.post("/file", formData, {
-                //                     headers: {
-                //                         "Content-Type": "multipart/form-data",
-                //                     },
-                //                 });
-                //
-                //                 const payload = {
-                //                     action: 'add_file_to_ticket',
-                //                     data: {
-                //                         item_id: data.id,
-                //                         file_uuid: response.data.uuid,
-                //                         file_name: response.data.name,
-                //                         file_size: response.data.size,
-                //                     }
-                //                 }
-                //                 if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                //                     wsRef.current.send(JSON.stringify(payload));
-                //                 } else {
-                //                     dispatch(setAppError("WebSocket error"));
-                //                 }
-                //             } catch (error: unknown) {
-                //                 if (error instanceof Error) {
-                //                     dispatch(setAppError(error.message));
-                //                 } else {
-                //                     dispatch(setAppError("An unknown error occurred"));
-                //                 }
-                //             }
-                //         })
-                //         break;
-                //     case "add_file_to_ticket":
-                //         break;
-                //     default:
-                //         dispatch(setAppError("Unknown message type received via WebSocket"));
-                //         break;
-                // }
+                switch (message.action) {
+                    case "send_message":
+                        const data = message.data;
+                        data.userName = userIdToName(data.user_id, state.users);
+                        localDispatch({type: "ADD_MESSAGE", payload: data});
+                        break;
+                    default:
+                        dispatch(setAppError("Unknown message type received via WebSocket"));
+                        break;
+                }
             };
         }
-    }, [state.files]);
+    }, [state.files, state.users]);
+
+    useEffect(() => {
+        if (containerRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+    }, [state.messages]);
 
     return (
         <>
-            <div className="p-4 flex justify-center pb-20">
-                <div className={'max-w-xl w-full gap-2 flex flex-col border border-gray-300 p-4'}>
+            <div className="flex flex-col mx-auto justify-center pb-14 h-[100vh]">
+                <button
+                    className={'border border-gray-300 mb-[-1px] p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                    onClick={() => navigate(`/messenger`)}
+                >
+                    Back
+                </button>
+                <div ref={containerRef}
+                     className={'w-full gap-2 flex flex-col border border-gray-300 p-4 overflow-y-auto h-full'}>
+                    <div className={'border border-gray-300 p-4'}>
+                        <h1>Title: {state.ticket?.title || 'Loading...'}</h1>
+                        <p>Description: {state.ticket?.description || 'Loading...'}</p>
+                        <p>Status: {state.ticket?.statusText || 'Loading...'}</p>
+                        <p>Initiator: {state.ticket?.userName || 'Loading...'}</p>
+                        <p>Assigned: {state.ticket?.adminName || 'None'}</p>
+                        <p>Date: {state.ticket ? dateToString(new Date(String(state.ticket.created_at))) : 'Loading...'}</p>
+                    </div>
+                    {state.messages.map((message, index) => (
+                        <div key={index} className={'border border-gray-300 p-4'}>
+                            <div>{message.userName}: {message.text}</div>
+                        </div>
+                    ))}
+                </div>
+                <div className={'mt-[-1px] w-full border border-gray-300 flex'}>
+                    <textarea
+                        className={'w-full h-full resize-none p-4'}
+                        placeholder={'Enter message'}
+                        value={state.message}
+                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => localDispatch({
+                            type: 'SET_MESSAGE',
+                            payload: e.target.value,
+                        })}
+                    />
                     <button
-                        className={'border border-gray-300 px-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
-                        onClick={() => navigate(`/messenger`)}
+                        className={'p-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                        onClick={sendMessage}
                     >
-                        Back
+                        <Send/>
                     </button>
-                    <div className={'border border-gray-300 p-4'}>
-                        Ticket info
-                    </div>
-                    <div className={'border border-gray-300 p-4'}>
-                        <div>Message</div>
-                    </div>
                 </div>
             </div>
         </>
