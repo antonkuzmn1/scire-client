@@ -7,3 +7,8 @@ export const apiOauth = axios.create({
 export const apiStorage = axios.create({
     baseURL: 'https://storage.antonkuzm.in',
 });
+
+export const apiScire = axios.create({
+    // baseURL: 'https://scire-server.antonkuzm.in',
+    baseURL: 'http://localhost:8000',
+})

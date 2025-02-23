@@ -12,8 +12,8 @@ import { ReactNode } from "react";
 import {createBrowserRouter, Navigate, RouterProvider} from "react-router-dom";
 import PageMe from "./pages/PageMe.tsx";
 import Page from "./pages/Page.tsx";
-import PageFiles from "./pages/PageFiles.tsx";
-import PageConfig from "./pages/PageConfig.tsx";
+import PageMessenger from "./pages/PageMessenger.tsx";
+import PageMessengerChat from "./pages/PageMessengerChat.tsx";
 
 export interface RoutePageInterface {
     path: string;
@@ -22,13 +22,13 @@ export interface RoutePageInterface {
 }
 
 export const routePages: RoutePageInterface[] = [
-    {path: '/files', element: <Page element={<PageFiles/>}/>, title: "Files"},
-    {path: '/config', element: <Page element={<PageConfig/>}/>, title: "Config"},
+    {path: '/messenger', element: <Page element={<PageMessenger/>}/>, title: "Messenger"},
+    {path: '/messenger/:ticketId', element: <Page element={<PageMessengerChat/>}/>, title: "Messenger"},
     {path: '/me', element: <Page element={<PageMe/>}/>, title: "Me"},
 ];
 
 const router = createBrowserRouter([
-    {path: "*", element: <Navigate to="/me"/>},
+    {path: "*", element: <Navigate to="/messenger"/>},
     ...routePages.map(page => ({
         path: page.path,
         element: page.element

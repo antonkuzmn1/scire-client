@@ -4,7 +4,7 @@ import {useDispatch} from "react-redux";
 import {useEffect} from "react";
 import {setAccountAuthorized} from "../slices/accountSlice.ts";
 import {setAppError, setAppLoading} from "../slices/appSlice.ts";
-import {apiOauth, apiStorage} from "../utils/api.ts";
+import {apiOauth, apiScire, apiStorage} from "../utils/api.ts";
 
 export const useAccount = () => {
     const dispatch: AppDispatch = useDispatch();
@@ -13,6 +13,7 @@ export const useAccount = () => {
         Cookies.remove('token');
         delete apiOauth.defaults.headers.common['Authorization'];
         delete apiStorage.defaults.headers.common['Authorization'];
+        delete apiScire.defaults.headers.common['Authorization'];
         dispatch(setAccountAuthorized(false));
     }
 
@@ -22,12 +23,13 @@ export const useAccount = () => {
 
         if (token) {
             try {
-                await apiOauth.get('/owner/profile', {
+                await apiOauth.get('/users/profile', {
                     headers: {Authorization: `Bearer ${token}`}
                 });
                 Cookies.set('token', token, {expires: 1});
                 apiOauth.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 apiStorage.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                apiScire.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                 dispatch(setAccountAuthorized(true));
             } catch (error: unknown) {
                 console.error(error);

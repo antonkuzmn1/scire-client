@@ -4,10 +4,10 @@ import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
 import Cookies from "js-cookie";
 import {setAccountAuthorized} from "../../slices/accountSlice.ts";
-import {apiOauth, apiStorage} from "../../utils/api.ts";
+import {apiOauth, apiScire, apiStorage} from "../../utils/api.ts";
 
 const loginUser = async (username: string, password: string) => {
-    return apiOauth.post('/owner/login', new URLSearchParams({username, password}), {
+    return apiOauth.post('/users/login', new URLSearchParams({username, password}), {
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
     });
 };
@@ -32,6 +32,7 @@ const Authorization = () => {
             Cookies.set('token', token, {expires: 1});
             apiOauth.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             apiStorage.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            apiScire.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             dispatch(setAccountAuthorized(true));
         } catch (error: unknown) {
             console.error(error);
@@ -43,6 +44,7 @@ const Authorization = () => {
             Cookies.remove('token');
             delete apiOauth.defaults.headers.common['Authorization'];
             delete apiStorage.defaults.headers.common['Authorization'];
+            delete apiScire.defaults.headers.common['Authorization'];
             dispatch(setAccountAuthorized(false));
         } finally {
             dispatch(setAppLoading(false));

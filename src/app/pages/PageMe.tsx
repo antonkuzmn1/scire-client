@@ -1,44 +1,68 @@
-import React, {ReactNode, useCallback, useEffect, useReducer} from "react";
+import React, {useCallback, useEffect, useReducer} from "react";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import Cookies from "js-cookie";
 import axios from "axios";
 import {setAccountAuthorized} from "../../slices/accountSlice.ts";
-import {setAppError, setAppLoading, setAppMessage} from "../../slices/appSlice.ts";
+import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
 import {dateToString} from "../../utils/formatDate.ts";
 import Input from "../components/Input.tsx";
-import Dialog from "../components/Dialog.tsx";
 import {apiOauth} from "../../utils/api.ts";
 
-interface Data {
+interface Company {
     id: number;
     username: string;
+    description: string;
     created_at: string | null;
     updated_at: string | null;
 }
 
-interface Password {
+interface Data {
+    id: number;
+    username: string;
     password: string;
-    passwordConfirmation: string;
+    surname: string;
+    name: string;
+    middlename: string | null;
+    department: string | null;
+    local_workplace: string | null;
+    remote_workplace: string | null;
+    phone: string | null;
+    cellular: string | null;
+    post: string | null;
+    company: Company;
+    companyName: string;
+    created_at: string | null;
+    updated_at: string | null;
 }
+
 
 interface State {
     data: Data;
-    dialog: 'update' | null;
-    password: Password;
 }
 
 type Action =
     | { type: 'SET_DATA', payload: Data }
-    | { type: "OPEN_DIALOG", payload: { dialog: 'update', password?: Password } }
-    | { type: 'CLOSE_DIALOG' }
-    | { type: 'UPDATE_DATA', payload: Partial<Data> }
-    | { type: 'UPDATE_PASSWORD', payload: Partial<Password> };
 
 const initialState: State = {
-    data: {id: 0, username: '', created_at: null, updated_at: null},
-    dialog: null,
-    password: {password: '', passwordConfirmation: ''},
+    data: {
+        id: 0,
+        username: '',
+        password: '',
+        surname: '',
+        name: '',
+        middlename: null,
+        department: null,
+        local_workplace: null,
+        remote_workplace: null,
+        phone: null,
+        cellular: null,
+        post: null,
+        company: {id: 0, username: '', description: '', created_at: null, updated_at: null},
+        companyName: '',
+        created_at: null,
+        updated_at: null
+    },
 }
 
 const reducer = (state: State, action: Action) => {
@@ -48,28 +72,6 @@ const reducer = (state: State, action: Action) => {
                 ...state,
                 data: action.payload,
             };
-        case "OPEN_DIALOG":
-            return {
-                ...state,
-                dialog: action.payload.dialog,
-                password: {password: '', passwordConfirmation: ''}
-            };
-        case "CLOSE_DIALOG":
-            return {
-                ...state,
-                dialog: null,
-                password: {password: '', passwordConfirmation: ''}
-            };
-        case 'UPDATE_DATA':
-            return {
-                ...state,
-                data: {...state.data, ...action.payload},
-            }
-        case 'UPDATE_PASSWORD':
-            return {
-                ...state,
-                password: {...state.password, ...action.payload},
-            }
         default:
             return state;
     }
@@ -82,8 +84,12 @@ const PageMe: React.FC = () => {
     const getData = useCallback(async () => {
         dispatch(setAppLoading(true));
         try {
-            const response = await apiOauth.get("/owner/profile");
-            localDispatch({type: "SET_DATA", payload: response.data});
+            const response = await apiOauth.get("/users/profile");
+            const data = {
+                ...response.data,
+                companyName: response.data.company.username,
+            }
+            localDispatch({type: "SET_DATA", payload: data});
         } catch (error: unknown) {
             if (error instanceof Error) {
                 dispatch(setAppError(error.message));
@@ -98,44 +104,6 @@ const PageMe: React.FC = () => {
     useEffect(() => {
         getData().then();
     }, [getData]);
-
-    const openDialog = useCallback((dialog: 'update', password?: Password) => {
-        localDispatch({type: "OPEN_DIALOG", payload: {dialog, password}});
-    }, []);
-
-    const closeDialog = useCallback(() => {
-        localDispatch({type: "CLOSE_DIALOG"});
-    }, []);
-
-    const updateData = useCallback(async () => {
-        if (!state.password.password || !state.password.passwordConfirmation) {
-            dispatch(setAppError('Password required'));
-            return;
-        }
-
-        if (state.password.password !== state.password.passwordConfirmation) {
-            dispatch(setAppError('Password is not equals'));
-            return;
-        }
-
-        dispatch(setAppLoading(true));
-        try {
-            const response = await apiOauth.put(`/owner/${state.data.id}`, {
-                username: state.data.username,
-                password: state.password.password,
-            });
-            localDispatch({type: "UPDATE_DATA", payload: response.data});
-            dispatch(setAppMessage('Password updated'));
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                dispatch(setAppError(error.message));
-            } else {
-                dispatch(setAppError("An unknown error occurred"));
-            }
-        } finally {
-            dispatch(setAppLoading(false));
-        }
-    }, [state.data, state.password, dispatch]);
 
     const logout = () => {
         Cookies.remove('token');
@@ -162,6 +130,83 @@ const PageMe: React.FC = () => {
                         readOnly={true}
                     />
                     <Input
+                        label={'Password'}
+                        type={'password'}
+                        placeholder={'Empty'}
+                        value={state.data.password}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Surname'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.surname}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Name'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.name}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Middlename'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.middlename || ''}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Department'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.department || ''}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Local workplace'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.local_workplace || ''}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Remote workplace'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.remote_workplace || ''}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Phone'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.phone || ''}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Cellular'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.cellular || ''}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Post'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.post || ''}
+                        readOnly={true}
+                    />
+                    <Input
+                        label={'Companies'}
+                        type={'text'}
+                        placeholder={'Empty'}
+                        value={state.data.companyName || ''}
+                        readOnly={true}
+                    />
+                    <Input
                         label={'Created'}
                         type={'text'}
                         placeholder={'Empty'}
@@ -182,72 +227,11 @@ const PageMe: React.FC = () => {
                         >
                             Log out
                         </button>
-                        <button
-                            className="border border-gray-300 flex items-center justify-center w-full hover:bg-gray-300 transition-colors duration-200 text-gray-600"
-                            onClick={() => openDialog('update', {password: '', passwordConfirmation: ''})}
-                        >
-                            Change password
-                        </button>
                     </div>
                 </div>
             </div>
-            {state.dialog && (
-                <DialogActions
-                    type={state.dialog}
-                    closeDialog={closeDialog}
-                    action={updateData}
-                    dialogFields={<>
-                        <Input
-                            label={'Password'}
-                            type={'password'}
-                            placeholder={'Enter new password'}
-                            value={state.password.password || ''}
-                            onChange={(e) => localDispatch({
-                                type: 'UPDATE_PASSWORD',
-                                payload: {password: e.target.value}
-                            })}
-                        />
-                        <Input
-                            label={'Confirm'}
-                            type={'password'}
-                            placeholder={'Confirm password'}
-                            value={state.password.passwordConfirmation || ''}
-                            onChange={(e) => localDispatch({
-                                type: 'UPDATE_PASSWORD',
-                                payload: {passwordConfirmation: e.target.value}
-                            })}
-                        />
-                    </>}
-                />
-            )}
         </>
     )
 }
 
 export default PageMe;
-
-interface DialogActionsProps {
-    type: 'update'
-    closeDialog: () => void;
-    action: () => void;
-    dialogFields?: ReactNode;
-}
-
-const DialogActions: React.FC<DialogActionsProps> = ({type, closeDialog, action, dialogFields}) => {
-    switch (type) {
-        case "update":
-            return (
-                <Dialog
-                    close={closeDialog}
-                    title={"Update password"}
-                    buttons={[
-                        {text: "Cancel", onClick: closeDialog},
-                        {text: "Update", onClick: action},
-                    ]}
-                    children={dialogFields}
-                />
-            );
-        default:
-            return null
-    }
-}
