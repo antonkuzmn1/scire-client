@@ -313,6 +313,24 @@ const PageMessengerChat: React.FC = () => {
         dispatch(setAppLoading(false));
     }
 
+    const closeTicket = () => {
+        dispatch(setAppLoading(true));
+
+        const payload = {
+            action: 'close_ticket',
+            data: {
+                item_id: ticketId,
+            }
+        }
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify(payload));
+        } else {
+            dispatch(setAppError("WebSocket error"));
+        }
+
+        dispatch(setAppLoading(false));
+    }
+
     const downloadTicketFile = async (ticketFile: TicketFile) => {
         dispatch(setAppLoading(true));
         try {
@@ -412,9 +430,16 @@ const PageMessengerChat: React.FC = () => {
                 console.log(message);
                 switch (message.action) {
                     case "send_message":
-                        const data = message.data;
-                        data.userName = userIdToName(data.user_id, state.users);
-                        localDispatch({type: "ADD_MESSAGE", payload: data});
+                        const sendMessageData: Message = message.data;
+                        sendMessageData.userName = userIdToName(sendMessageData.user_id, state.users);
+                        localDispatch({type: "ADD_MESSAGE", payload: sendMessageData});
+                        break;
+                    case "close_ticket":
+                        const closeTicketData: Ticket = message.data;
+                        closeTicketData.statusText = statusToText(closeTicketData.status);
+                        closeTicketData.userName = userIdToName(closeTicketData.user_id, state.users);
+                        closeTicketData.adminName = adminIdToName(closeTicketData.admin_id, state.admins);
+                        localDispatch({type: "SET_TICKET", payload: closeTicketData});
                         break;
                     default:
                         dispatch(setAppError("Unknown message type received via WebSocket"));
@@ -422,7 +447,7 @@ const PageMessengerChat: React.FC = () => {
                 }
             };
         }
-    }, [state.files, state.users]);
+    }, [state.files, state.users, state.admins]);
 
     useEffect(() => {
         if (containerRef.current) {
@@ -448,6 +473,12 @@ const PageMessengerChat: React.FC = () => {
                         <h1>Title: {state.ticket?.title || 'Loading...'}</h1>
                         <p>Description: {state.ticket?.description || 'Loading...'}</p>
                         <p>Status: {state.ticket?.statusText || 'Loading...'}</p>
+                        <button
+                            className={'border border-gray-300 p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                            onClick={closeTicket}
+                        >
+                            Close ticket
+                        </button>
                         <p>Initiator: {state.ticket?.userName || 'Loading...'}</p>
                         <p>Assigned: {state.ticket?.adminName || 'None'}</p>
                         <p>Date: {state.ticket ? dateToString(new Date(String(state.ticket.created_at))) : 'Loading...'}</p>
@@ -465,11 +496,20 @@ const PageMessengerChat: React.FC = () => {
                             ))}
                         </div>
                     </div>
-                    {state.messages.map((message, index) => (
-                        <div key={index} className={'border border-gray-300 p-4'}>
-                            <div>{message.userName}: {message.text}</div>
-                        </div>
-                    ))}
+                    {state.messages.map((message, index) => {
+                        if (message.solved && !message.admin_id) {
+                            return (
+                                <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div>{message.userName} marked ticket as Solved</div>
+                                </div>
+                            )
+                        }
+                        return (
+                            <div key={index} className={'border border-gray-300 p-4'}>
+                                <div>{message.userName}: {message.text}</div>
+                            </div>
+                        )
+                    })}
                 </div>
                 <div className={'mt-[-1px] w-full border border-gray-300 flex'}>
                     <textarea

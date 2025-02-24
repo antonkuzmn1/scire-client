@@ -216,7 +216,6 @@ const PageMessenger: React.FC = () => {
             data.sort((a: Ticket, b: Ticket) => {
                 return new Date(String(b.created_at)).getTime() - new Date(String(a.created_at)).getTime()
             });
-            console.log(data)
             localDispatch({type: "SET_TICKETS", payload: data});
         } catch (error: unknown) {
             if (error instanceof Error) {
