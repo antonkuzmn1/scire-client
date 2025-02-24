@@ -9,17 +9,17 @@ import {dateToString} from "../../utils/formatDate.ts";
 import {Download, Send} from "@mui/icons-material";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
 
-interface StorageFile {
-    uuid: string;
-    name: string;
-    size: number;
-    sizeFormatted: string;
-    user_id: number;
-    userName: string;
-    created_at: string | null;
-    updated_at: string | null;
-    file: File | null;
-}
+// interface StorageFile {
+//     uuid: string;
+//     name: string;
+//     size: number;
+//     sizeFormatted: string;
+//     user_id: number;
+//     userName: string;
+//     created_at: string | null;
+//     updated_at: string | null;
+//     file: File | null;
+// }
 
 interface Company {
     id: number;
@@ -400,7 +400,7 @@ const PageMessengerChat: React.FC = () => {
 
     useEffect(() => {
         const token = Cookies.get('token');
-        wsRef.current = new WebSocket('ws://localhost:8000', ["token", token || '']);
+        wsRef.current = new WebSocket('wss://scire-server.antonkuzm.in', ["token", token || '']);
 
         wsRef.current.onopen = () => {
         };

@@ -9,17 +9,17 @@ import Cookies from "js-cookie";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
 import {useNavigate} from "react-router-dom";
 
-interface StorageFile {
-    uuid: string;
-    name: string;
-    size: number;
-    sizeFormatted: string;
-    user_id: number;
-    userName: string;
-    created_at: string | null;
-    updated_at: string | null;
-    file: File | null;
-}
+// interface StorageFile {
+//     uuid: string;
+//     name: string;
+//     size: number;
+//     sizeFormatted: string;
+//     user_id: number;
+//     userName: string;
+//     created_at: string | null;
+//     updated_at: string | null;
+//     file: File | null;
+// }
 
 interface Company {
     id: number;
@@ -46,32 +46,32 @@ interface Admin {
     updated_at: string | null;
 }
 
-interface MessageFile {
-    item_id: number;
-    file_uuid: string;
-    file_name: string;
-    file_size: number;
-}
+// interface MessageFile {
+//     item_id: number;
+//     file_uuid: string;
+//     file_name: string;
+//     file_size: number;
+// }
 
-interface TicketFile {
-    item_id: number;
-    file_uuid: string;
-    file_name: string;
-    file_size: number;
-}
-
-interface Message {
-    id: number;
-    text: string;
-    user_id: number;
-    admin_id: number | null;
-    ticket_id: Ticket['id'];
-    admin_connected: boolean;
-    admin_disconnected: boolean;
-    in_progress: boolean;
-    solved: boolean;
-    files: MessageFile[];
-}
+// interface TicketFile {
+//     item_id: number;
+//     file_uuid: string;
+//     file_name: string;
+//     file_size: number;
+// }
+//
+// interface Message {
+//     id: number;
+//     text: string;
+//     user_id: number;
+//     admin_id: number | null;
+//     ticket_id: Ticket['id'];
+//     admin_connected: boolean;
+//     admin_disconnected: boolean;
+//     in_progress: boolean;
+//     solved: boolean;
+//     files: MessageFile[];
+// }
 
 interface Ticket {
     id: number;
@@ -280,7 +280,7 @@ const PageMessenger: React.FC = () => {
 
     useEffect(() => {
         const token = Cookies.get('token');
-        wsRef.current = new WebSocket('ws://localhost:8000', ["token", token || '']);
+        wsRef.current = new WebSocket('wss://scire-server.antonkuzm.in', ["token", token || '']);
 
         wsRef.current.onopen = () => {
         };
