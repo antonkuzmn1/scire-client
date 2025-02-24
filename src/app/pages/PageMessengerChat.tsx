@@ -2,11 +2,12 @@ import React, {ChangeEvent, useCallback, useEffect, useReducer, useRef} from "re
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
-import {apiOauth, apiScire} from "../../utils/api.ts";
+import {apiOauth, apiScire, apiStorage} from "../../utils/api.ts";
 import Cookies from "js-cookie";
 import {useNavigate, useParams} from "react-router-dom";
 import {dateToString} from "../../utils/formatDate.ts";
-import {Send} from "@mui/icons-material";
+import {Download, Send} from "@mui/icons-material";
+import {formatFileSize} from "../../utils/formatFileSize.ts";
 
 interface StorageFile {
     uuid: string;
@@ -260,6 +261,10 @@ const PageMessengerChat: React.FC = () => {
             data.adminName = adminIdToName(data.admin_id, adminsResponse.data);
             localDispatch({type: "SET_TICKET", payload: data});
 
+            const ticketFilesResponse = await apiScire.get(`/tickets/${ticketId}/files`);
+            const ticketFiles = ticketFilesResponse.data;
+            localDispatch({type: "SET_TICKET_FILES", payload: ticketFiles});
+
             const messagesResponse = await apiScire.get(`/messages/${ticketId}`);
             const messages: Message[] = messagesResponse.data.map((message: Message) => {
                 return {
@@ -306,6 +311,35 @@ const PageMessengerChat: React.FC = () => {
         }
 
         dispatch(setAppLoading(false));
+    }
+
+    const downloadTicketFile = async (ticketFile: TicketFile) => {
+        dispatch(setAppLoading(true));
+        try {
+            const response = await apiStorage.get(`/file/${ticketFile.file_uuid}`, {
+                responseType: "blob",
+            });
+
+            const blob = new Blob([response.data], { type: response.headers["content-type"] });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = ticketFile.file_name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                dispatch(setAppError(error.message));
+            } else {
+                dispatch(setAppError("An unknown error occurred"));
+            }
+        } finally {
+            dispatch(setAppLoading(false));
+        }
     }
 
     // const createTicket = useCallback(() => {
@@ -417,6 +451,19 @@ const PageMessengerChat: React.FC = () => {
                         <p>Initiator: {state.ticket?.userName || 'Loading...'}</p>
                         <p>Assigned: {state.ticket?.adminName || 'None'}</p>
                         <p>Date: {state.ticket ? dateToString(new Date(String(state.ticket.created_at))) : 'Loading...'}</p>
+                        <div className={'border border-gray-300 p-2 space-y-2'}>
+                            {state.ticketFiles.map((ticketFile, index) => (
+                                <div key={index} className={'border border-gray-300 flex justify-between items-center pl-2 h-12'}>
+                                    {ticketFile.file_name} - {formatFileSize(ticketFile.file_size)}
+                                    <button
+                                        className={'w-12 h-full cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                                        onClick={() => downloadTicketFile(ticketFile)}
+                                    >
+                                        <Download/>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                     {state.messages.map((message, index) => (
                         <div key={index} className={'border border-gray-300 p-4'}>
