@@ -3,7 +3,7 @@ import Input from "../components/Input.tsx";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
-import {apiOauth, apiScire, apiStorage} from "../../utils/api.ts";
+import {apiOauth, apiScire, apiStorage, wsScire} from "../../utils/api.ts";
 import Dialog from "../components/Dialog.tsx";
 import Cookies from "js-cookie";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
@@ -80,6 +80,7 @@ interface Ticket {
     status: 0 | 1 | 2
     statusText: 'Pending' | 'In progress' | 'Solved';
     user_id: number;
+    userName: string;
     admin_id: number | null;
     adminName: string;
     created_at: string | null;
@@ -112,6 +113,7 @@ const defaultTicket: Ticket = {
     status: 0,
     statusText: 'Pending',
     user_id: 0,
+    userName: '',
     admin_id: null,
     adminName: '',
     created_at: null,
@@ -280,7 +282,7 @@ const PageMessenger: React.FC = () => {
 
     useEffect(() => {
         const token = Cookies.get('token');
-        wsRef.current = new WebSocket('wss://scire-server.antonkuzm.in', ["token", token || '']);
+        wsRef.current = new WebSocket(wsScire, ["token", token || '']);
 
         wsRef.current.onopen = () => {
         };

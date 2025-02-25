@@ -2,7 +2,7 @@ import React, {ChangeEvent, useCallback, useEffect, useReducer, useRef} from "re
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
-import {apiOauth, apiScire, apiStorage} from "../../utils/api.ts";
+import {apiOauth, apiScire, apiStorage, wsScire} from "../../utils/api.ts";
 import Cookies from "js-cookie";
 import {useNavigate, useParams} from "react-router-dom";
 import {dateToString} from "../../utils/formatDate.ts";
@@ -86,6 +86,7 @@ interface Message {
     user_id: number;
     userName: string;
     admin_id: number | null;
+    adminName: string;
     ticket_id: Ticket['id'];
     admin_connected: boolean;
     admin_disconnected: boolean;
@@ -270,6 +271,7 @@ const PageMessengerChat: React.FC = () => {
                 return {
                     ...message,
                     userName: userIdToName(data.user_id, usersResponse.data),
+                    adminName: adminIdToName(data.admin_id, adminsResponse.data),
                 }
             });
             localDispatch({type: "SET_MESSAGES", payload: messages});
@@ -360,47 +362,9 @@ const PageMessengerChat: React.FC = () => {
         }
     }
 
-    // const createTicket = useCallback(() => {
-    //     const title = state.currentTicket.title.trim();
-    //     const description = state.currentTicket.description.trim();
-    //     if (!title || !description) {
-    //         dispatch(setAppError('Title and Description required'));
-    //     }
-    //
-    //     dispatch(setAppLoading(true));
-    //
-    //     const payload = {
-    //         action: 'create_ticket',
-    //         data: {
-    //             title,
-    //             description,
-    //         }
-    //     }
-    //     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-    //         wsRef.current.send(JSON.stringify(payload));
-    //     } else {
-    //         dispatch(setAppError("WebSocket error"));
-    //     }
-    //
-    //     dispatch(setAppLoading(false));
-    // }, [dispatch, state.currentTicket]);
-
-    // const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    //     if (!e.target.files || e.target.files.length === 0) return;
-    //
-    //     const newFile = e.target.files[0];
-    //
-    //     localDispatch({
-    //         type: 'ADD_FILE',
-    //         payload: newFile,
-    //     });
-    //
-    //     e.target.value = '';
-    // };
-
     useEffect(() => {
         const token = Cookies.get('token');
-        wsRef.current = new WebSocket('wss://scire-server.antonkuzm.in', ["token", token || '']);
+        wsRef.current = new WebSocket(wsScire, ["token", token || '']);
 
         wsRef.current.onopen = () => {
         };
@@ -432,6 +396,7 @@ const PageMessengerChat: React.FC = () => {
                     case "send_message":
                         const sendMessageData: Message = message.data;
                         sendMessageData.userName = userIdToName(sendMessageData.user_id, state.users);
+                        sendMessageData.adminName = adminIdToName(sendMessageData.admin_id, state.admins);
                         localDispatch({type: "ADD_MESSAGE", payload: sendMessageData});
                         break;
                     case "close_ticket":
@@ -440,6 +405,13 @@ const PageMessengerChat: React.FC = () => {
                         closeTicketData.userName = userIdToName(closeTicketData.user_id, state.users);
                         closeTicketData.adminName = adminIdToName(closeTicketData.admin_id, state.admins);
                         localDispatch({type: "SET_TICKET", payload: closeTicketData});
+                        break;
+                    case "assign_ticket":
+                        const assignTicket: Ticket = message.data;
+                        assignTicket.statusText = statusToText(assignTicket.status);
+                        assignTicket.userName = userIdToName(assignTicket.user_id, state.users);
+                        assignTicket.adminName = adminIdToName(assignTicket.admin_id, state.admins);
+                        localDispatch({type: "SET_TICKET", payload: assignTicket});
                         break;
                     default:
                         dispatch(setAppError("Unknown message type received via WebSocket"));
@@ -497,10 +469,24 @@ const PageMessengerChat: React.FC = () => {
                         </div>
                     </div>
                     {state.messages.map((message, index) => {
+                        if (message.admin_connected) {
+                            return (
+                                <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div>[Admin] {message.adminName} connected</div>
+                                </div>
+                            )
+                        }
                         if (message.solved && !message.admin_id) {
                             return (
                                 <div key={index} className={'border border-gray-300 p-4'}>
                                     <div>{message.userName} marked ticket as Solved</div>
+                                </div>
+                            )
+                        }
+                        if (message.admin_id) {
+                            return (
+                                <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div>[Admin] {message.userName}: {message.text}</div>
                                 </div>
                             )
                         }
