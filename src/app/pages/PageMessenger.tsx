@@ -46,6 +46,26 @@ interface Admin {
     updated_at: string | null;
 }
 
+interface User {
+    id: number;
+    username: string;
+    password: string;
+    surname: string;
+    name: string;
+    middlename: string | null;
+    department: string | null;
+    local_workplace: string | null;
+    remote_workplace: string | null;
+    phone: string | null;
+    cellular: string | null;
+    post: string | null;
+    company_id: number;
+    company: Company | null;
+    companyName: string;
+    created_at: string | null;
+    updated_at: string | null;
+}
+
 // interface MessageFile {
 //     item_id: number;
 //     file_uuid: string;
@@ -91,7 +111,8 @@ interface State {
     tickets: Ticket[];
     dialog: 'create' | 'ticket' | null;
     currentTicket: Ticket;
-    admins: Admin[]
+    admins: Admin[];
+    users: User[];
     files: File[];
 }
 
@@ -102,6 +123,8 @@ type Action =
     | { type: 'CLOSE_DIALOG' }
     | { type: 'UPDATE_CURRENT_TICKET', payload: Partial<Ticket> }
     | { type: 'ADD_TICKET', payload: Ticket }
+    | { type: 'UPDATE_TICKET', payload: Ticket }
+    | { type: 'DELETE_TICKET', payload: Ticket }
     | { type: 'SET_ADMINS', payload: Admin[] }
     | { type: 'ADD_FILE', payload: File | null }
     | { type: 'DELETE_FILE', payload: number };
@@ -125,6 +148,7 @@ const initialState: State = {
     dialog: null,
     currentTicket: defaultTicket,
     admins: [],
+    users: [],
     files: [],
 }
 
@@ -158,6 +182,18 @@ const reducer = (state: State, action: Action): State => {
                 ...state,
                 tickets: [action.payload, ...state.tickets],
                 dialog: null,
+            }
+        case 'UPDATE_TICKET':
+            return {
+                ...state,
+                tickets: state.tickets.map(ticket =>
+                    ticket.id === action.payload.id ? action.payload : ticket
+                ),
+            }
+        case 'DELETE_TICKET':
+            return {
+                ...state,
+                tickets: state.tickets.filter(ticket => ticket.id !== action.payload.id),
             }
         case 'SET_ADMINS':
             return {
@@ -193,6 +229,14 @@ function adminIdToName(adminId: number | null, admins: Admin[]) {
         return '';
     }
     return `${admin.surname} ${admin.name} ${admin.middlename}`.trim()
+}
+
+export const userIdToName = (userId: number | null, users: User[]) => {
+    const user = users.find((user: User) => user.id === userId);
+    if (!user) {
+        return '';
+    }
+    return `${user.surname} ${user.name} ${user.middlename}`.trim()
 }
 
 const PageMessenger: React.FC = () => {
@@ -353,6 +397,14 @@ const PageMessenger: React.FC = () => {
                         })
                         break;
                     case "add_file_to_ticket":
+                        break;
+                    case "send_message":
+                        break;
+                    case "set_ticket_status":
+                        message.data.statusText = statusToText(message.data.status);
+                        message.data.userName = userIdToName(message.data.user_id, state.users);
+                        message.data.adminName = adminIdToName(message.data.admin_id, state.admins);
+                        localDispatch({type: "UPDATE_TICKET", payload: message.data});
                         break;
                     default:
                         dispatch(setAppError("Unknown message type received via WebSocket"));
