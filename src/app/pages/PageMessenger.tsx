@@ -1,4 +1,4 @@
-import React, {ChangeEvent, ReactNode, useCallback, useEffect, useReducer, useRef} from "react";
+import React, {ChangeEvent, ReactNode, useCallback, useEffect, useReducer, useRef, useState} from "react";
 import Input from "../components/Input.tsx";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
@@ -10,6 +10,7 @@ import {formatFileSize} from "../../utils/formatFileSize.ts";
 import {useNavigate} from "react-router-dom";
 import {Admin, Ticket, User} from "../../utils/interfaces.ts";
 import {adminIdToName, statusToText, userIdToName} from "../../utils/messengerTools.ts";
+import LoadingSpinner from "../components/LoadingSpinner.tsx";
 
 interface State {
     tickets: Ticket[];
@@ -124,9 +125,10 @@ const PageMessenger: React.FC = () => {
     const [state, localDispatch] = useReducer(reducer, initialState);
     const wsRef = useRef<WebSocket | null>(null);
     const navigate = useNavigate();
+    const [initDone, setInitDone] = useState<boolean>(false);
 
-    const getTickets = useCallback(async () => {
-        dispatch(setAppLoading(true));
+    const init = useCallback(async () => {
+        setInitDone(false);
         try {
             const adminsResponse = await apiOauth.get("/admins/");
             localDispatch({type: "SET_ADMINS", payload: adminsResponse.data});
@@ -150,13 +152,13 @@ const PageMessenger: React.FC = () => {
                 dispatch(setAppError("An unknown error occurred"));
             }
         } finally {
-            dispatch(setAppLoading(false));
+            setInitDone(true);
         }
     }, []);
 
     useEffect(() => {
-        getTickets().then();
-    }, [dispatch]);
+        init().then();
+    }, [dispatch, init]);
 
     const openDialog = useCallback((dialog: "create" | "ticket", ticket?: Ticket) => {
         localDispatch({type: "OPEN_DIALOG", payload: {dialog, ticket}});
@@ -294,6 +296,8 @@ const PageMessenger: React.FC = () => {
         }
     }, [state.files]);
 
+    if (!initDone) return <LoadingSpinner/>;
+
     return (
         <>
             <div className="p-4 flex justify-center pb-20">
@@ -307,7 +311,7 @@ const PageMessenger: React.FC = () => {
                     {state.tickets.map((ticket: Ticket, index) => (
                         <div key={index} className={'border border-gray-300 p-4 h-fit'}>
                             <h1>{ticket.title} ({ticket.statusText})</h1>
-                            <p>{ticket.description}</p>
+                            <p className={'whitespace-pre-line'}>{ticket.description}</p>
                             <button
                                 className={'border border-gray-300 px-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
                                 onClick={() => navigate(`/messenger/${ticket.id}`)}

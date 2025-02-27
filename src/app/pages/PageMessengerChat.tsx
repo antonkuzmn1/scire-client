@@ -1,4 +1,4 @@
-import React, {ChangeEvent, useCallback, useEffect, useReducer, useRef} from "react";
+import React, {ChangeEvent, useCallback, useEffect, useReducer, useRef, useState} from "react";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
@@ -8,8 +8,9 @@ import {useNavigate, useParams} from "react-router-dom";
 import {dateToString} from "../../utils/formatDate.ts";
 import {Download, Send} from "@mui/icons-material";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
-import {Admin, Message, MessageFile, Ticket, TicketFile, User } from "../../utils/interfaces.ts";
-import {adminIdToName, statusToText, userIdToName } from "../../utils/messengerTools.ts";
+import {Admin, Message, MessageFile, Ticket, TicketFile, User} from "../../utils/interfaces.ts";
+import {adminIdToName, statusToText, userIdToName} from "../../utils/messengerTools.ts";
+import LoadingSpinner from "../components/LoadingSpinner.tsx";
 
 interface State {
     ticket: Ticket;
@@ -123,9 +124,10 @@ const PageMessengerChat: React.FC = () => {
     const navigate = useNavigate();
     const {ticketId} = useParams();
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const [initDone, setInitDone] = useState<boolean>(false);
 
     const init = useCallback(async () => {
-        dispatch(setAppLoading(true));
+        setInitDone(false);
         try {
             const adminsResponse = await apiOauth.get("/admins/");
             localDispatch({type: "SET_ADMINS", payload: adminsResponse.data});
@@ -160,13 +162,13 @@ const PageMessengerChat: React.FC = () => {
                 dispatch(setAppError("An unknown error occurred"));
             }
         } finally {
-            dispatch(setAppLoading(false));
+            setInitDone(true);
         }
     }, []);
 
     useEffect(() => {
         init().then();
-    }, [dispatch]);
+    }, [dispatch, init]);
 
     const sendMessage = () => {
         localDispatch({type: 'SET_MESSAGE', payload: ''});
@@ -311,6 +313,8 @@ const PageMessengerChat: React.FC = () => {
         }
     }, [state.messages]);
 
+    if (!initDone) return <LoadingSpinner/>;
+
     return (
         <>
             <div
@@ -318,7 +322,7 @@ const PageMessengerChat: React.FC = () => {
                 className={'fixed w-full h-[calc(100%-137px)] overflow-y-auto flex flex-col gap-2 p-4'}
             >
                 <div className={'border border-gray-300 p-4'}>
-                    <h1>Title: {state.ticket?.title || 'Loading...'}</h1>
+                    <h1 className={'font-bold text-xl'}>{state.ticket?.title}</h1>
                     <p>Description: {state.ticket?.description || 'Loading...'}</p>
                     <p>Status: {state.ticket?.statusText || 'Loading...'}</p>
                     <button
@@ -330,20 +334,22 @@ const PageMessengerChat: React.FC = () => {
                     <p>Initiator: {state.ticket?.userName || 'Loading...'}</p>
                     <p>Assigned: {state.ticket?.adminName || 'None'}</p>
                     <p>Date: {state.ticket ? dateToString(new Date(String(state.ticket.created_at))) : 'Loading...'}</p>
-                    <div className={'border border-gray-300 p-2 space-y-2'}>
-                        {state.ticketFiles.map((ticketFile, index) => (
-                            <div key={index}
-                                 className={'border border-gray-300 flex justify-between items-center pl-2 h-12'}>
-                                {ticketFile.file_name} - {formatFileSize(ticketFile.file_size)}
-                                <button
-                                    className={'w-12 h-full cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
-                                    onClick={() => downloadTicketFile(ticketFile)}
-                                >
-                                    <Download/>
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                    {state.ticketFiles.length > 0 && (
+                        <div className={'border border-gray-300 p-2 space-y-2'}>
+                            {state.ticketFiles.map((ticketFile, index) => (
+                                <div key={index}
+                                     className={'border border-gray-300 flex justify-between items-center pl-2 h-12'}>
+                                    {ticketFile.file_name} - {formatFileSize(ticketFile.file_size)}
+                                    <button
+                                        className={'w-12 h-full cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                                        onClick={() => downloadTicketFile(ticketFile)}
+                                    >
+                                        <Download/>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 {state.messages.map((message, index) => {
                     if (message.admin_id &&
