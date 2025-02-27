@@ -1,5 +1,4 @@
 import React from "react";
-import Navbar from "../components/Navbar.tsx";
 
 export interface ContentProps {
     element: any;
@@ -8,10 +7,7 @@ export interface ContentProps {
 const Page: React.FC<ContentProps> = (props: ContentProps) => {
 
     return (
-        <>
-            <div>{props.element}</div>
-            <Navbar/>
-        </>
+        <div>{props.element}</div>
     )
 }
 
