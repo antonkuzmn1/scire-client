@@ -45,25 +45,29 @@ interface State {
 type Action =
     | { type: 'SET_DATA', payload: Data }
 
+const defaultCompany = {id: 0, username: '', description: '', created_at: null, updated_at: null};
+
+const defaultData = {
+    id: 0,
+    username: '',
+    password: '',
+    surname: '',
+    name: '',
+    middlename: null,
+    department: null,
+    local_workplace: null,
+    remote_workplace: null,
+    phone: null,
+    cellular: null,
+    post: null,
+    company: defaultCompany,
+    companyName: '',
+    created_at: null,
+    updated_at: null
+}
+
 const initialState: State = {
-    data: {
-        id: 0,
-        username: '',
-        password: '',
-        surname: '',
-        name: '',
-        middlename: null,
-        department: null,
-        local_workplace: null,
-        remote_workplace: null,
-        phone: null,
-        cellular: null,
-        post: null,
-        company: {id: 0, username: '', description: '', created_at: null, updated_at: null},
-        companyName: '',
-        created_at: null,
-        updated_at: null
-    },
+    data: defaultData,
 }
 
 const reducer = (state: State, action: Action) => {
@@ -77,6 +81,24 @@ const reducer = (state: State, action: Action) => {
             return state;
     }
 }
+
+const fields: { label: string, type: string, key: keyof Data }[] = [
+    {label: "ID", type: "string", key: "id"},
+    {label: "Username", type: "string", key: "username"},
+    {label: "Password", type: "password", key: "password"},
+    {label: "Surname", type: "string", key: "surname"},
+    {label: "Name", type: "string", key: "name"},
+    {label: "Middlename", type: "string", key: "middlename"},
+    {label: "Department", type: "string", key: "department"},
+    {label: "Local workplace", type: "string", key: "local_workplace"},
+    {label: "Remote workplace", type: "string", key: "remote_workplace"},
+    {label: "Phone", type: "string", key: "phone"},
+    {label: "Cellular", type: "string", key: "cellular"},
+    {label: "Post", type: "string", key: "post"},
+    {label: "Company", type: "string", key: "companyName"},
+    {label: "Created at", type: "date", key: "created_at"},
+    {label: "Updated at", type: "date", key: "updated_at"}
+];
 
 const PageMe: React.FC = () => {
     const dispatch: AppDispatch = useDispatch();
@@ -119,111 +141,30 @@ const PageMe: React.FC = () => {
         <>
             <div className="p-4 flex justify-center pb-20">
                 <div className={'max-w-xl w-full gap-2 flex flex-col'}>
-                    <Input
-                        label={'ID'}
-                        type={'number'}
-                        placeholder={'Empty'}
-                        value={state.data.id}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Username'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.username}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Password'}
-                        type={'password'}
-                        placeholder={'Empty'}
-                        value={state.data.password}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Surname'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.surname}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Name'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.name}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Middlename'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.middlename || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Department'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.department || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Local workplace'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.local_workplace || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Remote workplace'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.remote_workplace || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Phone'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.phone || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Cellular'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.cellular || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Post'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.post || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Companies'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.companyName || ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Created'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.created_at ? dateToString(new Date(state.data.created_at)) : ''}
-                        readOnly={true}
-                    />
-                    <Input
-                        label={'Updated'}
-                        type={'text'}
-                        placeholder={'Empty'}
-                        value={state.data.updated_at ? dateToString(new Date(state.data.updated_at)) : ''}
-                        readOnly={true}
-                    />
+                    {fields.map((field) => {
+                        if (field.type === "date") return (
+                            <Input
+                                label={field.label}
+                                type={'text'}
+                                placeholder={'Empty'}
+                                value={
+                                    state.data[field.key]
+                                        ? dateToString(new Date(String(state.data[field.key])))
+                                        : ''
+                                }
+                                readOnly={true}
+                            />
+                        )
+                        return (
+                            <Input
+                                label={field.label}
+                                type={field.type}
+                                placeholder={'Empty'}
+                                value={String(state.data[field.key])}
+                                readOnly={true}
+                            />
+                        )
+                    })}
                     <div className="flex w-full h-12 gap-2">
                         <button
                             className="border border-gray-300 flex items-center justify-center w-full hover:bg-gray-300 transition-colors duration-200 text-gray-600"
