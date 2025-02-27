@@ -1,6 +1,8 @@
 import React, {createContext, ReactNode, useContext, useEffect, useState} from 'react';
 import {wsScire} from "../utils/api.ts";
 import Cookies from "js-cookie";
+import {setAppError} from "../slices/appSlice.ts";
+import { useDispatch } from 'react-redux';
 
 type WebSocketContextType = {
     socket: WebSocket | null;
@@ -22,6 +24,7 @@ interface Props {
 
 export const WebSocketProvider: React.FC<Props> = ({ children }: Props) => {
     const [socket, setSocket] = useState<WebSocket | null>(null);
+    const dispatch = useDispatch();
 
     useEffect(() => {
         const token = Cookies.get('token');
@@ -33,14 +36,17 @@ export const WebSocketProvider: React.FC<Props> = ({ children }: Props) => {
 
         ws.onopen = () => {
             console.log('WebSocket connected');
+            dispatch(setAppError('WebSocket connected'));
         };
 
         ws.onerror = (error) => {
             console.error('WebSocket error', error);
+            dispatch(setAppError('WebSocket error'));
         };
 
         ws.onclose = () => {
             console.log('WebSocket disconnected');
+            dispatch(setAppError('WebSocket disconnected'));
         };
 
         setSocket(ws);
