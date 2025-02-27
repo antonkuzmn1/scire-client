@@ -14,7 +14,7 @@ import PageMe from "./pages/PageMe.tsx";
 import Page from "./pages/Page.tsx";
 import PageMessenger from "./pages/PageMessenger.tsx";
 import PageMessengerChat from "./pages/PageMessengerChat.tsx";
-import { WebSocketProvider } from "./WebSocketContext.tsx";
+import {WebSocketProvider} from "./WebSocketContext.tsx";
 
 export interface RoutePageInterface {
     path: string;
@@ -49,14 +49,16 @@ function App() {
     }
 
     return (
-        <WebSocketProvider>
-            {!authorized ? <Authorization/> : <RouterProvider router={router}/>}
+        <>
+            <WebSocketProvider>
+                {!authorized ? <Authorization/> : <RouterProvider router={router}/>}
+            </WebSocketProvider>
 
             <ErrorMessage/>
             <Message/>
 
             <Loading/>
-        </WebSocketProvider>
+        </>
     )
 }
 
