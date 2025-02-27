@@ -1,8 +1,8 @@
-import React, {createContext, ReactNode, useContext, useEffect, useState} from 'react';
+import React, {createContext, ReactNode, useContext, useEffect, useRef, useState} from 'react';
 import {wsScire} from "../utils/api.ts";
 import Cookies from "js-cookie";
-import {setAppError} from "../slices/appSlice.ts";
-import { useDispatch } from 'react-redux';
+
+const RECONNECT_INTERVAL = 5000;
 
 type WebSocketContextType = {
     socket: WebSocket | null;
@@ -24,45 +24,47 @@ interface Props {
 
 export const WebSocketProvider: React.FC<Props> = ({ children }: Props) => {
     const [socket, setSocket] = useState<WebSocket | null>(null);
-    const dispatch = useDispatch();
+    const reconnectTimer = useRef<any>(null);
 
-    useEffect(() => {
+    const connectWebSocket = () => {
         const token = Cookies.get('token');
-        const ws = new WebSocket(wsScire, ["token", token || '']);
+        const ws = token ? new WebSocket(wsScire, ["token", token]) : new WebSocket(wsScire);
+
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+            if (reconnectTimer.current) {
+                clearTimeout(reconnectTimer.current);
+                reconnectTimer.current = null;
+            }
+        };
 
         ws.onmessage = (event) => {
             console.log('Received message:', event.data);
         };
 
-        ws.onopen = () => {
-            console.log('WebSocket connected');
-            dispatch(setAppError('WebSocket connected'));
-        };
-
         ws.onerror = (error) => {
             console.error('WebSocket error', error);
-            dispatch(setAppError('WebSocket error'));
         };
 
         ws.onclose = () => {
-            console.log('WebSocket disconnected');
-            dispatch(setAppError('WebSocket disconnected'));
+            console.log('WebSocket disconnected, attempting to reconnect...');
+            reconnectTimer.current = setTimeout(connectWebSocket, RECONNECT_INTERVAL);
         };
 
         setSocket(ws);
+    };
 
+    useEffect(() => {
+        connectWebSocket();
         return () => {
-            ws.close();
+            if (socket) {
+                socket.close();
+            }
+            if (reconnectTimer.current) {
+                clearTimeout(reconnectTimer.current);
+            }
         };
     }, []);
-
-    // const sendMessage = (message: string) => {
-    //     if (socket && socket.readyState === WebSocket.OPEN) {
-    //         socket.send(message);
-    //     } else {
-    //         console.log('WebSocket is not open');
-    //     }
-    // };
 
     return (
         <WebSocketContext.Provider value={{ socket }}>
