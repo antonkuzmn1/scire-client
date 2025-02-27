@@ -298,15 +298,15 @@ const PageMessengerChat: React.FC = () => {
             >
                 <div className={'border border-gray-300 p-4'}>
                     <h1 className={'font-bold text-xl'}>{state.ticket?.title}</h1>
-                    <p>Description: {state.ticket?.description || 'Loading...'}</p>
-                    <p>Status: {state.ticket?.statusText || 'Loading...'}</p>
+                    <p className={'whitespace-pre-line'}>{state.ticket?.description}</p>
+                    <p>Status: {state.ticket?.statusText}</p>
                     <button
                         className={'border border-gray-300 p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
                         onClick={closeTicket}
                     >
                         Close ticket
                     </button>
-                    <p>Initiator: {state.ticket?.userName || 'Loading...'}</p>
+                    <p>Initiator: {state.ticket?.userName}</p>
                     <p>Assigned: {state.ticket?.adminName || 'None'}</p>
                     <p>Date: {state.ticket ? dateToString(new Date(String(state.ticket.created_at))) : 'Loading...'}</p>
                     {state.ticketFiles.length > 0 && (
