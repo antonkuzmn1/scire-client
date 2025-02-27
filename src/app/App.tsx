@@ -8,12 +8,13 @@ import Authorization from "./components/Authorization.tsx";
 import ErrorMessage from "./components/ErrorMessage.tsx";
 import Message from "./components/Message.tsx";
 import Loading from "./components/Loading.tsx";
-import { ReactNode } from "react";
+import {ReactNode} from "react";
 import {createBrowserRouter, Navigate, RouterProvider} from "react-router-dom";
 import PageMe from "./pages/PageMe.tsx";
 import Page from "./pages/Page.tsx";
 import PageMessenger from "./pages/PageMessenger.tsx";
 import PageMessengerChat from "./pages/PageMessengerChat.tsx";
+import { WebSocketProvider } from "./WebSocketContext.tsx";
 
 export interface RoutePageInterface {
     path: string;
@@ -48,14 +49,14 @@ function App() {
     }
 
     return (
-        <>
+        <WebSocketProvider>
             {!authorized ? <Authorization/> : <RouterProvider router={router}/>}
 
             <ErrorMessage/>
             <Message/>
 
             <Loading/>
-        </>
+        </WebSocketProvider>
     )
 }
 

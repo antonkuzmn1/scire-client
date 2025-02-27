@@ -141,9 +141,10 @@ const PageMe: React.FC = () => {
         <>
             <div className="p-4 flex justify-center pb-20">
                 <div className={'max-w-xl w-full gap-2 flex flex-col'}>
-                    {fields.map((field) => {
+                    {fields.map((field, index) => {
                         if (field.type === "date") return (
                             <Input
+                                key={index}
                                 label={field.label}
                                 type={'text'}
                                 placeholder={'Empty'}
@@ -157,6 +158,7 @@ const PageMe: React.FC = () => {
                         )
                         return (
                             <Input
+                                key={index}
                                 label={field.label}
                                 type={field.type}
                                 placeholder={'Empty'}

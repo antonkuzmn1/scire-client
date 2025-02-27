@@ -1,16 +1,16 @@
-import React, {ChangeEvent, ReactNode, useCallback, useEffect, useReducer, useRef, useState} from "react";
+import React, {ChangeEvent, ReactNode, useCallback, useEffect, useReducer, useState} from "react";
 import Input from "../components/Input.tsx";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
 import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
-import {apiOauth, apiScire, apiStorage, wsScire} from "../../utils/api.ts";
+import {apiOauth, apiScire, apiStorage} from "../../utils/api.ts";
 import Dialog from "../components/Dialog.tsx";
-import Cookies from "js-cookie";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
 import {useNavigate} from "react-router-dom";
 import {Admin, Ticket, User} from "../../utils/interfaces.ts";
 import {adminIdToName, statusToText, userIdToName} from "../../utils/messengerTools.ts";
 import LoadingSpinner from "../components/LoadingSpinner.tsx";
+import {useWebSocket} from "../WebSocketContext.tsx";
 
 interface State {
     tickets: Ticket[];
@@ -123,9 +123,9 @@ const reducer = (state: State, action: Action): State => {
 const PageMessenger: React.FC = () => {
     const dispatch: AppDispatch = useDispatch();
     const [state, localDispatch] = useReducer(reducer, initialState);
-    const wsRef = useRef<WebSocket | null>(null);
     const navigate = useNavigate();
     const [initDone, setInitDone] = useState<boolean>(false);
+    const {socket} = useWebSocket();
 
     const init = useCallback(async () => {
         setInitDone(false);
@@ -184,8 +184,8 @@ const PageMessenger: React.FC = () => {
                 description,
             }
         }
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify(payload));
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(payload));
         } else {
             dispatch(setAppError("WebSocket error"));
         }
@@ -207,33 +207,8 @@ const PageMessenger: React.FC = () => {
     };
 
     useEffect(() => {
-        const token = Cookies.get('token');
-        wsRef.current = new WebSocket(wsScire, ["token", token || '']);
-
-        wsRef.current.onopen = () => {
-        };
-
-        wsRef.current.onerror = (error: any) => {
-            console.log('WebSocket error');
-            dispatch(setAppError(error || 'WebSocket error'));
-        };
-
-        wsRef.current.onclose = () => {
-            console.log('WebSocket closed');
-            // dispatch(setAppMessage("WebSocket closed"));
-        };
-
-        return () => {
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.close();
-                console.log('WebSocket closed');
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        if (wsRef.current) {
-            wsRef.current.onmessage = (event: any) => {
+        if (socket) {
+            socket.onmessage = (event: any) => {
                 const message = JSON.parse(event.data);
                 console.log(message);
                 switch (message.action) {
@@ -264,8 +239,8 @@ const PageMessenger: React.FC = () => {
                                         file_size: response.data.size,
                                     }
                                 }
-                                if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                                    wsRef.current.send(JSON.stringify(payload));
+                                if (socket && socket.readyState === WebSocket.OPEN) {
+                                    socket.send(JSON.stringify(payload));
                                 } else {
                                     dispatch(setAppError("WebSocket error"));
                                 }
