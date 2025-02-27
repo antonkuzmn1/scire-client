@@ -8,104 +8,8 @@ import Dialog from "../components/Dialog.tsx";
 import Cookies from "js-cookie";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
 import {useNavigate} from "react-router-dom";
-
-// interface StorageFile {
-//     uuid: string;
-//     name: string;
-//     size: number;
-//     sizeFormatted: string;
-//     user_id: number;
-//     userName: string;
-//     created_at: string | null;
-//     updated_at: string | null;
-//     file: File | null;
-// }
-
-interface Company {
-    id: number;
-    username: string;
-    description: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-interface Admin {
-    id: number;
-    username: string;
-    password: string;
-    surname: string;
-    name: string;
-    middlename: string | null;
-    department: string | null;
-    phone: string | null;
-    cellular: string | null;
-    post: string | null;
-    companies: Company[]
-    companyNames: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-interface User {
-    id: number;
-    username: string;
-    password: string;
-    surname: string;
-    name: string;
-    middlename: string | null;
-    department: string | null;
-    local_workplace: string | null;
-    remote_workplace: string | null;
-    phone: string | null;
-    cellular: string | null;
-    post: string | null;
-    company_id: number;
-    company: Company | null;
-    companyName: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-// interface MessageFile {
-//     item_id: number;
-//     file_uuid: string;
-//     file_name: string;
-//     file_size: number;
-// }
-
-// interface TicketFile {
-//     item_id: number;
-//     file_uuid: string;
-//     file_name: string;
-//     file_size: number;
-// }
-//
-// interface Message {
-//     id: number;
-//     text: string;
-//     user_id: number;
-//     admin_id: number | null;
-//     ticket_id: Ticket['id'];
-//     admin_connected: boolean;
-//     admin_disconnected: boolean;
-//     in_progress: boolean;
-//     solved: boolean;
-//     files: MessageFile[];
-// }
-
-interface Ticket {
-    id: number;
-    title: string;
-    description: string;
-    status: 0 | 1 | 2
-    statusText: 'Pending' | 'In progress' | 'Solved';
-    user_id: number;
-    userName: string;
-    admin_id: number | null;
-    adminName: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
+import {Admin, Ticket, User} from "../../utils/interfaces.ts";
+import {adminIdToName, statusToText, userIdToName} from "../../utils/messengerTools.ts";
 
 interface State {
     tickets: Ticket[];
@@ -213,30 +117,6 @@ const reducer = (state: State, action: Action): State => {
         default:
             return state;
     }
-}
-
-function statusToText(status: 0 | 1 | 2) {
-    return status === 2
-        ? 'Solved'
-        : status === 1
-            ? 'In progress'
-            : 'Pending';
-}
-
-function adminIdToName(adminId: number | null, admins: Admin[]) {
-    const admin = admins.find((admin: Admin) => admin.id === adminId);
-    if (!admin) {
-        return '';
-    }
-    return `${admin.surname} ${admin.name} ${admin.middlename}`.trim()
-}
-
-export const userIdToName = (userId: number | null, users: User[]) => {
-    const user = users.find((user: User) => user.id === userId);
-    if (!user) {
-        return '';
-    }
-    return `${user.surname} ${user.name} ${user.middlename}`.trim()
 }
 
 const PageMessenger: React.FC = () => {

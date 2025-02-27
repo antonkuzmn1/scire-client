@@ -8,106 +8,8 @@ import {useNavigate, useParams} from "react-router-dom";
 import {dateToString} from "../../utils/formatDate.ts";
 import {Download, Send} from "@mui/icons-material";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
-
-// interface StorageFile {
-//     uuid: string;
-//     name: string;
-//     size: number;
-//     sizeFormatted: string;
-//     user_id: number;
-//     userName: string;
-//     created_at: string | null;
-//     updated_at: string | null;
-//     file: File | null;
-// }
-
-interface Company {
-    id: number;
-    username: string;
-    description: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-interface User {
-    id: number;
-    username: string;
-    password: string;
-    surname: string;
-    name: string;
-    middlename: string | null;
-    department: string | null;
-    local_workplace: string | null;
-    remote_workplace: string | null;
-    phone: string | null;
-    cellular: string | null;
-    post: string | null;
-    company_id: number;
-    company: Company | null;
-    companyName: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-interface Admin {
-    id: number;
-    username: string;
-    password: string;
-    surname: string;
-    name: string;
-    middlename: string | null;
-    department: string | null;
-    phone: string | null;
-    cellular: string | null;
-    post: string | null;
-    companies: Company[]
-    companyNames: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
-
-interface MessageFile {
-    item_id: number;
-    file_uuid: string;
-    file_name: string;
-    file_size: number;
-}
-
-interface TicketFile {
-    item_id: number;
-    file_uuid: string;
-    file_name: string;
-    file_size: number;
-}
-
-interface Message {
-    id: number;
-    text: string;
-    user_id: number;
-    userName: string;
-    admin_id: number | null;
-    adminName: string;
-    ticket_id: Ticket['id'];
-    admin_connected: boolean;
-    admin_disconnected: boolean;
-    in_progress: boolean;
-    solved: boolean;
-    files: MessageFile[];
-}
-
-interface Ticket {
-    id: number;
-    title: string;
-    description: string;
-    status: 0 | 1 | 2
-    statusText: 'Pending' | 'In progress' | 'Solved';
-    user_id: number;
-    userName: string;
-    admin_id: number | null;
-    adminName: string;
-    created_at: string | null;
-    updated_at: string | null;
-}
+import {Admin, Message, MessageFile, Ticket, TicketFile, User } from "../../utils/interfaces.ts";
+import {adminIdToName, statusToText, userIdToName } from "../../utils/messengerTools.ts";
 
 interface State {
     ticket: Ticket;
@@ -212,30 +114,6 @@ const reducer = (state: State, action: Action): State => {
         default:
             return state;
     }
-}
-
-function statusToText(status: 0 | 1 | 2) {
-    return status === 2
-        ? 'Solved'
-        : status === 1
-            ? 'In progress'
-            : 'Pending';
-}
-
-function adminIdToName(adminId: number | null, admins: Admin[]) {
-    const admin = admins.find((admin: Admin) => admin.id === adminId);
-    if (!admin) {
-        return '';
-    }
-    return `${admin.surname} ${admin.name} ${admin.middlename}`.trim()
-}
-
-function userIdToName(userId: number | null, users: User[]) {
-    const user = users.find((user: User) => user.id === userId);
-    if (!user) {
-        return '';
-    }
-    return `${user.surname} ${user.name} ${user.middlename}`.trim()
 }
 
 const PageMessengerChat: React.FC = () => {
@@ -394,25 +272,21 @@ const PageMessengerChat: React.FC = () => {
                 console.log(message);
                 switch (message.action) {
                     case "send_message":
-                        const sendMessageData: Message = message.data;
-                        sendMessageData.userName = userIdToName(sendMessageData.user_id, state.users);
-                        sendMessageData.adminName = adminIdToName(sendMessageData.admin_id, state.admins);
-                        localDispatch({type: "ADD_MESSAGE", payload: sendMessageData});
+                        message.data.userName = userIdToName(message.data.user_id, state.users);
+                        message.data.adminName = adminIdToName(message.data.admin_id, state.admins);
+                        localDispatch({type: "ADD_MESSAGE", payload: message.data});
                         break;
                     case "close_ticket":
-                        const closeTicketData: Ticket = message.data;
-                        closeTicketData.statusText = statusToText(closeTicketData.status);
-                        closeTicketData.userName = userIdToName(closeTicketData.user_id, state.users);
-                        closeTicketData.adminName = adminIdToName(closeTicketData.admin_id, state.admins);
-                        localDispatch({type: "SET_TICKET", payload: closeTicketData});
+                        message.data.statusText = statusToText(message.data.status);
+                        message.data.userName = userIdToName(message.data.user_id, state.users);
+                        message.data.adminName = adminIdToName(message.data.admin_id, state.admins);
+                        localDispatch({type: "SET_TICKET", payload: message.data});
                         break;
                     case "assign_ticket":
-                        const assignTicket: Ticket = message.data;
-                        assignTicket.statusText = statusToText(assignTicket.status);
-                        assignTicket.userName = userIdToName(assignTicket.user_id, state.users);
-                        assignTicket.adminName = adminIdToName(assignTicket.admin_id, state.admins);
-                        localDispatch({type: "SET_TICKET", payload: assignTicket});
-                        console.log(assignTicket);
+                        message.data.statusText = statusToText(message.data.status);
+                        message.data.userName = userIdToName(message.data.user_id, state.users);
+                        message.data.adminName = adminIdToName(message.data.admin_id, state.admins);
+                        localDispatch({type: "SET_TICKET", payload: message.data});
                         break;
                     case "set_ticket_status":
                         message.data.statusText = statusToText(message.data.status);
