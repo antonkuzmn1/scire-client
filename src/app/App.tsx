@@ -13,6 +13,7 @@ import {createBrowserRouter, Navigate, RouterProvider} from "react-router-dom";
 import Page from "./pages/Page.tsx";
 import PageMessenger from "./pages/PageMessenger.tsx";
 import { WebSocketProvider } from "./WebSocketContext.tsx";
+import PageMe from "./pages/PageMe.tsx";
 
 export interface RoutePageInterface {
     path: string;
@@ -21,8 +22,9 @@ export interface RoutePageInterface {
 }
 
 export const routePages: RoutePageInterface[] = [
-    {path: '/messenger', element: <Page element={<PageMessenger/>}/>, title: "Messenger"},
-    {path: '/messenger/:ticketId', element: <Page element={<PageMessenger/>}/>, title: "Messenger"},
+    {path: '/', element: <Page element={<PageMessenger/>}/>, title: "Messenger"},
+    {path: '/:ticketId', element: <Page element={<PageMessenger/>}/>, title: "Messenger"},
+    {path: '/me', element: <Page element={<PageMe/>}/>, title: "Me"},
 ];
 
 const router = createBrowserRouter([

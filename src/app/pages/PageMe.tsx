@@ -9,6 +9,7 @@ import {dateToString} from "../../utils/formatDate.ts";
 import Input from "../components/Input.tsx";
 import {apiOauth} from "../../utils/api.ts";
 import LoadingSpinner from "../components/LoadingSpinner.tsx";
+import {useNavigate} from "react-router-dom";
 
 interface Company {
     id: number;
@@ -104,6 +105,7 @@ const PageMe: React.FC = () => {
     const dispatch: AppDispatch = useDispatch();
     const [state, localDispatch] = useReducer(reducer, initialState);
     const [initDone, setInitDone] = useState<boolean>(false);
+    const navigate = useNavigate();
 
     const init = useCallback(async () => {
         setInitDone(false);
@@ -139,8 +141,8 @@ const PageMe: React.FC = () => {
 
     return (
         <>
-            <div className="p-4 flex justify-center pb-20">
-                <div className={'max-w-xl w-full gap-2 flex flex-col'}>
+            <div className="p-4 flex justify-center max-h-dvh overflow-y-auto hide-scrollbar">
+                <div className={'max-w-xl w-full gap-2 flex flex-col h-full pb-10'}>
                     {fields.map((field, index) => {
                         if (field.type === "date") return (
                             <Input
@@ -167,13 +169,21 @@ const PageMe: React.FC = () => {
                             />
                         )
                     })}
-                    <div className="flex w-full h-12 gap-2">
-                        <button
-                            className="border border-gray-300 flex items-center justify-center w-full hover:bg-gray-300 transition-colors duration-200 text-gray-600"
-                            onClick={logout}
-                        >
-                            Log out
-                        </button>
+                    <div className={"w-full fixed bottom-0 left-0 flex justify-center"}>
+                        <div className={"flex min-h-12 w-full max-w-xl bg-white border border-gray-300"}>
+                            <button
+                                className={"flex items-center justify-center w-full hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
+                                onClick={() => navigate('/')}
+                            >
+                                Back
+                            </button>
+                            <button
+                                className={"flex items-center justify-center w-full hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
+                                onClick={logout}
+                            >
+                                Log out
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

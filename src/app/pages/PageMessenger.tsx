@@ -168,7 +168,6 @@ const PageMessenger: React.FC = () => {
         }
 
         setChatInitDone(false);
-        console.log(state.users)
         try {
             const adminsResponse = await apiOauth.get("/admins/");
             localDispatch({type: "SET_ADMINS", payload: adminsResponse.data});
@@ -254,6 +253,7 @@ const PageMessenger: React.FC = () => {
         const text = state.message.trim();
         if (!text) {
             dispatch(setAppError('Message text required'));
+            return;
         }
 
         dispatch(setAppLoading(true));
@@ -339,7 +339,7 @@ const PageMessenger: React.FC = () => {
                             type: 'UPDATE_CURRENT_TICKET',
                             payload: {title: '', description: ''},
                         })
-                        navigate(`/messenger/${message.data.id}`);
+                        navigate(`/${message.data.id}`);
                         state.files.forEach(async (file: File) => {
                             const formData = new FormData();
                             formData.append("file", file);
@@ -415,7 +415,6 @@ const PageMessenger: React.FC = () => {
     }, [state.files, state.users, state.admins]);
 
     useEffect(() => {
-        console.log(state.messages)
         if (containerRef.current) {
             containerRef.current.scrollTo({
                 top: containerRef.current.scrollHeight,
@@ -427,7 +426,9 @@ const PageMessenger: React.FC = () => {
     if (!initDone) return <LoadingSpinner/>;
 
     return (
-        <div className={'flex w-full justify-center pt-4 pb-40'}>
+        <div
+            className={`flex w-full justify-center`}
+        >
             <button
                 className={'border border-gray-300 fixed top-4 left-4 w-12 h-12 bg-white cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
                 children={<Menu/>}
@@ -437,32 +438,44 @@ const PageMessenger: React.FC = () => {
                 <div
                     className={'bg-white border-r border-gray-300 fixed z-10 top-0 left-0 max-w-68 min-w-68 gap-2 flex flex-col h-dvh overflow-y-scroll p-4'}
                 >
-                    <div className={'sticky top-0 left-0 space-x-2 flex'}>
-                        <button
-                            className={'bg-white border border-gray-300 min-w-12 h-12 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
-                            children={<Close/>}
-                            onClick={() => setTicketsPanelIsOpen(false)}
-                        />
-                        <button
-                            className={'bg-white border border-gray-300 w-full h-12 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
-                            onClick={() => {
-                                navigate(`/messenger`);
-                                setTicketsPanelIsOpen(false);
-                                localDispatch({
-                                    type: 'SET_CURRENT_TICKET',
-                                    payload: defaultTicket,
-                                })
-                            }}
-                        >
-                            <h1>Create new ticket</h1>
-                        </button>
+                    <div className={'sticky top-0 left-0 space-y-2'}>
+                        <div className={'space-x-2 flex'}>
+                            <button
+                                className={'bg-white border border-gray-300 min-w-12 h-12 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                                children={<Close/>}
+                                onClick={() => setTicketsPanelIsOpen(false)}
+                            />
+                            <button
+                                className={'bg-white border border-gray-300 w-full h-12 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                                onClick={() => {
+                                    navigate(`/me`);
+                                }}
+                            >
+                                Account
+                            </button>
+                        </div>
+                        <div>
+                            <button
+                                className={'bg-white border border-gray-300 w-full p-4 h-fit cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                                onClick={() => {
+                                    navigate(`/`);
+                                    setTicketsPanelIsOpen(false);
+                                    localDispatch({
+                                        type: 'SET_CURRENT_TICKET',
+                                        payload: defaultTicket,
+                                    })
+                                }}
+                            >
+                                Create new ticket
+                            </button>
+                        </div>
                     </div>
                     {state.tickets.map((ticket: Ticket, index) => (
                         <div
                             key={index}
                             className={`border border-gray-300 p-4 h-fit cursor-pointer hover:bg-gray-300 transition-colors duration-200 ${ticket.status === 0 ? 'bg-red-200' : ticket.status === 1 ? 'bg-yellow-200' : 'bg-green-200'}`}
                             onClick={() => {
-                                navigate(`/messenger/${ticket.id}`);
+                                navigate(`/${ticket.id}`);
                                 setTicketsPanelIsOpen(false);
                             }}
                         >
@@ -475,7 +488,7 @@ const PageMessenger: React.FC = () => {
                 chatInitDone ? (
                     <div
                         ref={containerRef}
-                        className={'max-w-xl w-full gap-2 flex flex-col pb-2 overflow-y-auto max-h-[calc(100dvh-160px)]'}
+                        className={'max-w-xl w-full gap-2 flex flex-col pt-20 pb-2 hide-scrollbar overflow-y-auto max-h-[calc(100dvh-144px)]'}
                     >
                         <div className={'border border-gray-300 p-4'}>
                             <h1 className={'font-bold text-xl'}>{state.currentTicket?.title}</h1>
@@ -682,13 +695,6 @@ const PageMessenger: React.FC = () => {
                     </button>
                 </div>
             )}
-
-            {ticketId ? (
-                chatInitDone ? (<></>) : (<></>)
-            ) : (
-                <></>
-            )
-            }
         </div>
     )
 }
