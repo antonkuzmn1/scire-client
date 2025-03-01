@@ -443,7 +443,13 @@ const PageMessenger: React.FC = () => {
                         localDispatch({type: "UPDATE_TICKET", payload: message.data})
                         localDispatch({type: "SET_CURRENT_TICKET", payload: message.data});
                         break;
-                    case "assign_ticket":
+                    case "connect_ticket":
+                        message.data.statusText = statusToText(message.data.status);
+                        message.data.userName = userIdToName(message.data.user_id, state.users);
+                        message.data.adminName = adminIdToName(message.data.admin_id, state.admins);
+                        localDispatch({type: "SET_CURRENT_TICKET", payload: message.data});
+                        break;
+                    case "disconnect_ticket":
                         message.data.statusText = statusToText(message.data.status);
                         message.data.userName = userIdToName(message.data.user_id, state.users);
                         message.data.adminName = adminIdToName(message.data.admin_id, state.admins);
@@ -575,11 +581,11 @@ const PageMessenger: React.FC = () => {
                             <p>Department: {getUserById(state.currentTicket?.user_id)?.department || 'None'}</p>
                             <p>Post: {getUserById(state.currentTicket?.user_id)?.post || 'None'}</p>
                             <p>
-                                Local workplace:
+                                {'Local workplace: '}
                                 {getUserById(state.currentTicket?.user_id)?.local_workplace || 'None'}
                             </p>
                             <p>
-                                Remote workplace:
+                                {'Remote workplace: '}
                                 {getUserById(state.currentTicket?.user_id)?.remote_workplace || 'None'}
                             </p>
                             <p>Phone: {getUserById(state.currentTicket?.user_id)?.phone || 'None'}</p>
@@ -692,6 +698,18 @@ const PageMessenger: React.FC = () => {
                                     <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
                                             [Admin] {message.adminName} connected
+                                        </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
+                                        </div>
+                                    </div>
+                                )
+                            }
+                            if (message.admin_disconnected) {
+                                return (
+                                    <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
+                                        <div className={'whitespace-pre-line'}>
+                                            [Admin] {message.adminName} disconnected
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
