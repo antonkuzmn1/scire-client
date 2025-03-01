@@ -2,7 +2,7 @@ import React, {ChangeEvent, useCallback, useEffect, useReducer, useRef, useState
 import Input from "../components/Input.tsx";
 import {AppDispatch} from "../../utils/store.ts";
 import {useDispatch} from "react-redux";
-import {setAppError, setAppLoading} from "../../slices/appSlice.ts";
+import {setAppError} from "../../slices/appSlice.ts";
 import {apiOauth, apiScire, apiStorage} from "../../utils/api.ts";
 import {formatFileSize} from "../../utils/formatFileSize.ts";
 import {useNavigate, useParams} from "react-router-dom";
@@ -218,7 +218,7 @@ const PageMessenger: React.FC = () => {
             return;
         }
 
-        dispatch(setAppLoading(true));
+        setInitDone(false);
 
         const payload = {
             action: 'create_ticket',
@@ -233,7 +233,7 @@ const PageMessenger: React.FC = () => {
             dispatch(setAppError("WebSocket error"));
         }
 
-        dispatch(setAppLoading(false));
+        setInitDone(true);
     }, [dispatch, state.currentTicket]);
 
     const getUserById = (userId: number | undefined) => {
@@ -281,7 +281,7 @@ const PageMessenger: React.FC = () => {
             return;
         }
 
-        dispatch(setAppLoading(true));
+        setChatInitDone(false);
 
         const payload = {
             action: 'send_message',
@@ -296,11 +296,11 @@ const PageMessenger: React.FC = () => {
             dispatch(setAppError("WebSocket error"));
         }
 
-        dispatch(setAppLoading(false));
+        setChatInitDone(true);
     }
 
     const closeTicket = () => {
-        dispatch(setAppLoading(true));
+        setChatInitDone(false);
 
         const payload = {
             action: 'close_ticket',
@@ -314,11 +314,11 @@ const PageMessenger: React.FC = () => {
             dispatch(setAppError("WebSocket error"));
         }
 
-        dispatch(setAppLoading(false));
+        setChatInitDone(true);
     }
 
     const reopenTicket = () => {
-        dispatch(setAppLoading(true));
+        setChatInitDone(false);
 
         const payload = {
             action: 'reopen_ticket',
@@ -332,11 +332,11 @@ const PageMessenger: React.FC = () => {
             dispatch(setAppError("WebSocket error"));
         }
 
-        dispatch(setAppLoading(false));
+        setChatInitDone(true);
     }
 
     const downloadTicketFile = async (ticketFile: TicketFile) => {
-        dispatch(setAppLoading(true));
+        setChatInitDone(false);
         try {
             const response = await apiStorage.get(`/file/${ticketFile.file_uuid}`, {
                 responseType: "blob",
@@ -360,7 +360,7 @@ const PageMessenger: React.FC = () => {
                 dispatch(setAppError("An unknown error occurred"));
             }
         } finally {
-            dispatch(setAppLoading(false));
+            setChatInitDone(true);
         }
     }
 
