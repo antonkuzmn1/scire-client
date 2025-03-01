@@ -1,8 +1,10 @@
-import { useSelector } from "react-redux";
-import { RootState } from "../../utils/store.ts";
+import {useSelector} from "react-redux";
+import {RootState} from "../../utils/store.ts";
+import {useTranslation} from "react-i18next";
 
 const Loading = () => {
     const loading = useSelector((state: RootState) => state.app.loading);
+    const {t} = useTranslation();
 
     if (!loading) return null;
 
@@ -21,7 +23,7 @@ const Loading = () => {
                         fill="currentFill"
                     />
                 </svg>
-                <p className="mt-4 text-white text-lg">Loading</p>
+                <p className="mt-4 text-white text-lg">{t('loading')}</p>
             </div>
         </div>
     );

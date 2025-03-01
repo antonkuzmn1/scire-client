@@ -10,6 +10,7 @@ import Input from "../components/Input.tsx";
 import {apiOauth} from "../../utils/api.ts";
 import LoadingSpinner from "../components/LoadingSpinner.tsx";
 import {useNavigate} from "react-router-dom";
+import {useTranslation} from "react-i18next";
 
 interface Company {
     id: number;
@@ -84,21 +85,21 @@ const reducer = (state: State, action: Action) => {
 }
 
 const fields: { label: string, type: string, key: keyof Data }[] = [
-    {label: "ID", type: "string", key: "id"},
-    {label: "Username", type: "string", key: "username"},
-    {label: "Password", type: "password", key: "password"},
-    {label: "Surname", type: "string", key: "surname"},
-    {label: "Name", type: "string", key: "name"},
-    {label: "Middlename", type: "string", key: "middlename"},
-    {label: "Department", type: "string", key: "department"},
-    {label: "Local workplace", type: "string", key: "local_workplace"},
-    {label: "Remote workplace", type: "string", key: "remote_workplace"},
-    {label: "Phone", type: "string", key: "phone"},
-    {label: "Cellular", type: "string", key: "cellular"},
-    {label: "Post", type: "string", key: "post"},
-    {label: "Company", type: "string", key: "companyName"},
-    {label: "Created at", type: "date", key: "created_at"},
-    {label: "Updated at", type: "date", key: "updated_at"}
+    {label: "page_me_field_id", type: "string", key: "id"},
+    {label: "page_me_field_username", type: "string", key: "username"},
+    {label: "page_me_field_password", type: "password", key: "password"},
+    {label: "page_me_field_surname", type: "string", key: "surname"},
+    {label: "page_me_field_name", type: "string", key: "name"},
+    {label: "page_me_field_middlename", type: "string", key: "middlename"},
+    {label: "page_me_field_department", type: "string", key: "department"},
+    {label: "page_me_field_local_workplace", type: "string", key: "local_workplace"},
+    {label: "page_me_field_remote_workplace", type: "string", key: "remote_workplace"},
+    {label: "page_me_field_phone", type: "string", key: "phone"},
+    {label: "page_me_field_cellular", type: "string", key: "cellular"},
+    {label: "page_me_field_post", type: "string", key: "post"},
+    {label: "page_me_field_company", type: "string", key: "companyName"},
+    {label: "page_me_field_created_at", type: "date", key: "created_at"},
+    {label: "page_me_field_updated_at", type: "date", key: "updated_at"}
 ];
 
 const PageMe: React.FC = () => {
@@ -106,6 +107,7 @@ const PageMe: React.FC = () => {
     const [state, localDispatch] = useReducer(reducer, initialState);
     const [initDone, setInitDone] = useState<boolean>(false);
     const navigate = useNavigate();
+    const {t} = useTranslation();
 
     const init = useCallback(async () => {
         setInitDone(false);
@@ -147,9 +149,9 @@ const PageMe: React.FC = () => {
                         if (field.type === "date") return (
                             <Input
                                 key={index}
-                                label={field.label}
+                                label={t(field.label)}
                                 type={'text'}
-                                placeholder={'Empty'}
+                                placeholder={t('page_me_field_placeholder')}
                                 value={
                                     state.data[field.key]
                                         ? dateToString(new Date(String(state.data[field.key])))
@@ -161,9 +163,9 @@ const PageMe: React.FC = () => {
                         return (
                             <Input
                                 key={index}
-                                label={field.label}
+                                label={t(field.label)}
                                 type={field.type}
-                                placeholder={'Empty'}
+                                placeholder={t('page_me_field_placeholder')}
                                 value={String(state.data[field.key])}
                                 readOnly={true}
                             />
@@ -175,13 +177,13 @@ const PageMe: React.FC = () => {
                                 className={"flex items-center justify-center w-full cursor-pointer hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
                                 onClick={() => navigate('/')}
                             >
-                                Back
+                                {t('page_me_button_back')}
                             </button>
                             <button
                                 className={"flex items-center justify-center w-full cursor-pointer hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
                                 onClick={logout}
                             >
-                                Log out
+                                {t('page_me_button_log_out')}
                             </button>
                         </div>
                     </div>

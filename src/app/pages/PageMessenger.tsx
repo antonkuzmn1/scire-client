@@ -12,6 +12,7 @@ import LoadingSpinner from "../components/LoadingSpinner.tsx";
 import {useWebSocket} from "../WebSocketContext.tsx";
 import {Close, Download, Menu, Send} from "@mui/icons-material";
 import {dateToString} from "../../utils/formatDate.ts";
+import {useTranslation} from "react-i18next";
 
 interface State {
     tickets: Ticket[];
@@ -128,6 +129,7 @@ const PageMessenger: React.FC = () => {
     const {ticketId} = useParams();
     const [ticketsPanelIsOpen, setTicketsPanelIsOpen] = useState<boolean>(!ticketId);
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const {t} = useTranslation();
 
     const init = useCallback(async () => {
         setInitDone(false);
@@ -190,8 +192,8 @@ const PageMessenger: React.FC = () => {
             const messages: Message[] = messagesResponse.data.map((message: Message) => {
                 return {
                     ...message,
-                    userName: userIdToName(data.user_id, usersResponse.data),
-                    adminName: adminIdToName(data.admin_id, adminsResponse.data),
+                    userName: userIdToName(message.user_id, usersResponse.data),
+                    adminName: adminIdToName(message.admin_id, adminsResponse.data),
                 }
             });
             localDispatch({type: "SET_MESSAGES", payload: messages});
@@ -368,7 +370,6 @@ const PageMessenger: React.FC = () => {
         if (socket) {
             socket.onmessage = (event: any) => {
                 const message = JSON.parse(event.data);
-                console.log(message);
                 switch (message.action) {
                     case "create_ticket":
                         message.data.statusText = statusToText(message.data.status);
@@ -507,7 +508,7 @@ const PageMessenger: React.FC = () => {
                                     navigate(`/me`);
                                 }}
                             >
-                                Account
+                                {t('page_messenger_left_account')}
                             </button>
                         </div>
                         <div>
@@ -522,7 +523,7 @@ const PageMessenger: React.FC = () => {
                                     })
                                 }}
                             >
-                                Create new ticket
+                                {t('page_messenger_left_create')}
                             </button>
                         </div>
                     </div>
@@ -535,7 +536,7 @@ const PageMessenger: React.FC = () => {
                                 setTicketsPanelIsOpen(false);
                             }}
                         >
-                            <h1>{ticket.title} ({ticket.statusText})</h1>
+                            <h1>{ticket.title} ({t(ticket.statusText)})</h1>
                         </div>
                     ))}
                 </div>
@@ -558,47 +559,77 @@ const PageMessenger: React.FC = () => {
                                         : 'bg-red-200'}
                                 `}
                             >
-                                Status: {state.currentTicket?.statusText}
+                                {t('page_messenger_current_field_status')}: {t(state.currentTicket?.statusText)}
                             </p>
                             {state.currentTicket?.status === 2
                                 ? <button
                                     className={'border border-gray-300 p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
                                     onClick={reopenTicket}
                                 >
-                                    Reopen ticket
+                                    {t('page_messenger_current_button_reopen_ticket')}
                                 </button>
                                 : <button
                                     className={'border border-gray-300 p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
                                     onClick={closeTicket}
                                 >
-                                    Close ticket
+                                    {t('page_messenger_current_button_close_ticket')}
                                 </button>
                             }
                             <br/>
                             <br/>
-                            <p>User:</p>
-                            <p>Fullname: {state.currentTicket?.userName || 'None'}</p>
-                            <p>Department: {getUserById(state.currentTicket?.user_id)?.department || 'None'}</p>
-                            <p>Post: {getUserById(state.currentTicket?.user_id)?.post || 'None'}</p>
+                            <p>{t('page_messenger_current_field_user')}:</p>
                             <p>
-                                {'Local workplace: '}
-                                {getUserById(state.currentTicket?.user_id)?.local_workplace || 'None'}
+                                {t('page_messenger_current_field_user_fullname')}
+                                : {state.currentTicket?.userName || t('page_messenger_current_field_placeholder')}
                             </p>
                             <p>
-                                {'Remote workplace: '}
-                                {getUserById(state.currentTicket?.user_id)?.remote_workplace || 'None'}
+                                {t('page_messenger_current_field_user_department')}
+                                : {getUserById(state.currentTicket?.user_id)?.department || t('page_messenger_current_field_placeholder')}
                             </p>
-                            <p>Phone: {getUserById(state.currentTicket?.user_id)?.phone || 'None'}</p>
-                            <p>Cellular: {getUserById(state.currentTicket?.user_id)?.cellular || 'None'}</p>
+                            <p>
+                                {t('page_messenger_current_field_user_post')}
+                                : {getUserById(state.currentTicket?.user_id)?.post || t('page_messenger_current_field_placeholder')}
+                            </p>
+                            <p>
+                                {t('page_messenger_current_field_user_local_workplace')}
+                                : {getUserById(state.currentTicket?.user_id)?.local_workplace || t('page_messenger_current_field_placeholder')}
+                            </p>
+                            <p>
+                                {t('page_messenger_current_field_user_remote_workplace')}
+                                : {getUserById(state.currentTicket?.user_id)?.remote_workplace || t('page_messenger_current_field_placeholder')}
+                            </p>
+                            <p>
+                                {t('page_messenger_current_field_user_phone')}
+                                : {getUserById(state.currentTicket?.user_id)?.phone || t('page_messenger_current_field_placeholder')}
+                            </p>
+                            <p>
+                                {t('page_messenger_current_field_user_cellular')}
+                                : {getUserById(state.currentTicket?.user_id)?.cellular || t('page_messenger_current_field_placeholder')}
+                            </p>
                             <br/>
-                            <p className={'w-fit bg-yellow-200'}>Admin:</p>
+                            <p className={'w-fit bg-yellow-200'}>{t('page_messenger_current_field_admin')}:</p>
                             {state.currentTicket?.admin_id ? (<>
-                                <p>Fullname: {state.currentTicket?.adminName || 'None'}</p>
-                                <p>Department: {getAdminById(state.currentTicket?.admin_id)?.department || 'None'}</p>
-                                <p>Post: {getAdminById(state.currentTicket?.admin_id)?.post || 'None'}</p>
-                                <p>Phone: {getAdminById(state.currentTicket?.admin_id)?.phone || 'None'}</p>
-                                <p>Cellular: {getAdminById(state.currentTicket?.admin_id)?.cellular || 'None'}</p>
-                            </>) : <p>None</p>}
+                                <p>
+                                    {t('page_messenger_current_field_admin_fullname')}
+                                    : {state.currentTicket?.adminName || t('page_messenger_current_field_placeholder')}
+                                </p>
+                                <p>
+                                    {t('page_messenger_current_field_admin_department')}
+                                    : {getAdminById(state.currentTicket?.admin_id)?.department || t('page_messenger_current_field_placeholder')}
+                                </p>
+                                <p>
+                                    {t('page_messenger_current_field_admin_post')}
+                                    : {getAdminById(state.currentTicket?.admin_id)?.post || t('page_messenger_current_field_placeholder')}
+                                </p>
+                                <p>
+                                    {t('page_messenger_current_field_admin_phone')}
+                                    : {getAdminById(state.currentTicket?.admin_id)?.phone || t('page_messenger_current_field_placeholder')}
+                                </p>
+                                <p>
+                                    {t('page_messenger_current_field_admin_cellular')}
+                                    : {getAdminById(state.currentTicket?.admin_id)?.cellular || t('page_messenger_current_field_placeholder')}
+                                </p>
+                            </>) : <p>{t('page_messenger_current_field_placeholder')}</p>}
                             <br/>
                             <p className={'text-right'}>
                                 {dateToString(new Date(String(state.currentTicket.created_at)))}
@@ -631,7 +662,8 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
-                                            [Admin] {message.adminName} marked ticket as Pending
+                                            [{t('page_messenger_current_message_prefix_admin')}
+                                            ] {message.adminName} {t('page_messenger_current_message_set_status_pending')}
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
@@ -649,7 +681,7 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4'}>
                                         <div className={'whitespace-pre-line'}>
-                                            {message.userName} marked ticket as Pending
+                                            {message.userName} {t('page_messenger_current_message_set_status_pending')}
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
@@ -667,7 +699,8 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
-                                            [Admin] {message.adminName} marked ticket as In progress
+                                            [{t('page_messenger_current_message_prefix_admin')}
+                                            ] {message.adminName} {t('page_messenger_current_message_set_status_in_progress')}
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
@@ -685,7 +718,8 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
-                                            [Admin] {message.adminName} marked ticket as Solved
+                                            [{t('page_messenger_current_message_prefix_admin')}
+                                            ] {message.adminName} {t('page_messenger_current_message_set_status_solved')}
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
@@ -697,7 +731,8 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
-                                            [Admin] {message.adminName} connected
+                                            [{t('page_messenger_current_message_prefix_admin')}
+                                            ] {message.adminName} {t('page_messenger_current_message_connected')}
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
@@ -709,7 +744,8 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
-                                            [Admin] {message.adminName} disconnected
+                                            [{t('page_messenger_current_message_prefix_admin')}
+                                            ] {message.adminName} {t('page_messenger_current_message_disconnected')}
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
@@ -721,7 +757,7 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4'}>
                                         <div className={'whitespace-pre-line'}>
-                                            {message.userName} marked ticket as Solved
+                                            {message.userName} {t('page_messenger_current_message_set_status_solved')}
                                         </div>
                                         <div className={'w-full text-right'}>
                                             {dateToString(new Date(String(message.created_at)))}
@@ -733,7 +769,8 @@ const PageMessenger: React.FC = () => {
                                 return (
                                     <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div>
-                                            [Admin] {message.adminName}:
+                                            [{t('page_messenger_current_message_prefix_admin')}
+                                            ] {message.adminName}:
                                         </div>
                                         <div className={'whitespace-pre-line'}>
                                             {message.text}
@@ -761,7 +798,7 @@ const PageMessenger: React.FC = () => {
                         <div className={'max-w-xl w-full h-36 border border-gray-300 flex fixed bottom-0 bg-white'}>
                         <textarea
                             className={'w-full h-full resize-none p-4'}
-                            placeholder={'Enter message'}
+                            placeholder={t('page_messenger_current_input_placeholder')}
                             value={state.message}
                             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => localDispatch({
                                 type: 'SET_MESSAGE',
@@ -783,8 +820,8 @@ const PageMessenger: React.FC = () => {
             ) : (
                 <div className={'max-w-xl w-full gap-2 p-4 flex flex-col min-h-dvh justify-center'}>
                     <Input
-                        label={'Title'}
-                        placeholder={'Enter value...'}
+                        label={t('page_messenger_new_field_title_label')}
+                        placeholder={t('page_messenger_new_field_title_placeholder')}
                         type={'text'}
                         value={state.currentTicket.title || ''}
                         onChange={(e: ChangeEvent<HTMLInputElement>) => localDispatch({
@@ -796,10 +833,10 @@ const PageMessenger: React.FC = () => {
                         <label
                             className={'border-r border-gray-300 min-w-36 flex items-center justify-center text-gray-700'}
                         >
-                            Description
+                            {t('page_messenger_new_field_description_title')}
                         </label>
                         <textarea
-                            placeholder={'Enter value...'}
+                            placeholder={t('page_messenger_new_field_description_placeholder')}
                             value={state.currentTicket.description || ''}
                             onChange={(e: ChangeEvent<HTMLTextAreaElement>) => localDispatch({
                                 type: 'UPDATE_CURRENT_TICKET',
@@ -810,8 +847,9 @@ const PageMessenger: React.FC = () => {
                     </div>
                     <div className={'border border-gray-300 h-fit flex'}>
                         <label
-                            className={'border-r border-gray-300 min-w-36 flex items-center justify-center text-gray-700'}>
-                            Files
+                            className={'border-r border-gray-300 min-w-36 flex items-center justify-center text-gray-700'}
+                        >
+                            {t('page_messenger_new_field_files_title')}
                         </label>
                         <div className={'w-full p-2 space-y-2'}>
                             <input
@@ -824,7 +862,7 @@ const PageMessenger: React.FC = () => {
                                 htmlFor="file-upload"
                                 className="h-12 px-3 w-full border border-gray-300 flex items-center cursor-pointer text-gray-700 hover:bg-gray-300 transition-colors duration-200"
                             >
-                                Add file
+                                {t('page_messenger_new_field_files_add')}
                             </label>
                             {state.files.map((file: File, index: number) => (
                                 <div
@@ -839,7 +877,7 @@ const PageMessenger: React.FC = () => {
                                             payload: index,
                                         })}
                                     >
-                                        Delete
+                                        {t('page_messenger_new_field_files_del')}
                                     </button>
                                 </div>
                             ))}
@@ -849,7 +887,7 @@ const PageMessenger: React.FC = () => {
                         className={'border border-gray-300 h-12 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
                         onClick={createTicket}
                     >
-                        Create ticket
+                        {t('page_messenger_new_button_create')}
                     </button>
                 </div>
             )}

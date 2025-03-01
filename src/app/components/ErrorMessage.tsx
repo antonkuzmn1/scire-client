@@ -2,9 +2,11 @@ import {AppDispatch, RootState} from "../../utils/store.ts";
 import {useDispatch, useSelector} from "react-redux";
 import {setAppError} from "../../slices/appSlice.ts";
 import Dialog from "./Dialog.tsx";
+import {useTranslation} from "react-i18next";
 
 const ErrorMessage = () => {
     const dispatch: AppDispatch = useDispatch();
+    const {t} = useTranslation();
 
     const error = useSelector((state: RootState) => state.app.error);
 
@@ -12,11 +14,11 @@ const ErrorMessage = () => {
 
     return (
         <Dialog
-            title={"Error"}
+            title={t("error_message_title")}
             close={() => dispatch(setAppError(""))}
             message={error}
             buttons={[
-                {text: "Close", onClick: () => dispatch(setAppError(""))},
+                {text: t("error_message_button_close"), onClick: () => dispatch(setAppError(""))},
             ]}
         />
     );
