@@ -257,6 +257,18 @@ const PageMessenger: React.FC = () => {
         e.target.value = '';
     };
 
+    const handleKeyDown = (event: any) => {
+        if (event.key === "Enter") {
+            if (event.shiftKey) {
+                event.preventDefault();
+                localDispatch({type: 'SET_MESSAGE', payload: state.message + '\n'});
+            } else {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+    };
+
     const sendMessage = () => {
         if (state.currentTicket.status === 2) {
             reopenTicket();
@@ -737,6 +749,7 @@ const PageMessenger: React.FC = () => {
                                 type: 'SET_MESSAGE',
                                 payload: e.target.value,
                             })}
+                            onKeyDown={handleKeyDown}
                         />
                             <button
                                 className={'p-4 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
