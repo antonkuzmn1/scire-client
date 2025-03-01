@@ -236,6 +236,14 @@ const PageMessenger: React.FC = () => {
         dispatch(setAppLoading(false));
     }, [dispatch, state.currentTicket]);
 
+    const getUserById = (userId: number | undefined) => {
+        return state.users.find(user => user.id === userId);
+    }
+
+    const getAdminById = (adminId: number | undefined) => {
+        return state.admins.find(admin => admin.id === adminId);
+    }
+
     const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files || e.target.files.length === 0) return;
 
@@ -250,6 +258,10 @@ const PageMessenger: React.FC = () => {
     };
 
     const sendMessage = () => {
+        if (state.currentTicket.status === 2) {
+            reopenTicket();
+        }
+
         localDispatch({type: 'SET_MESSAGE', payload: ''});
         const text = state.message.trim();
         if (!text) {
@@ -280,6 +292,24 @@ const PageMessenger: React.FC = () => {
 
         const payload = {
             action: 'close_ticket',
+            data: {
+                item_id: ticketId,
+            }
+        }
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify(payload));
+        } else {
+            dispatch(setAppError("WebSocket error"));
+        }
+
+        dispatch(setAppLoading(false));
+    }
+
+    const reopenTicket = () => {
+        dispatch(setAppLoading(true));
+
+        const payload = {
+            action: 'reopen_ticket',
             data: {
                 item_id: ticketId,
             }
@@ -394,6 +424,13 @@ const PageMessenger: React.FC = () => {
                         localDispatch({type: "UPDATE_TICKET", payload: message.data})
                         localDispatch({type: "SET_CURRENT_TICKET", payload: message.data});
                         break;
+                    case "reopen_ticket":
+                        message.data.statusText = statusToText(message.data.status);
+                        message.data.userName = userIdToName(message.data.user_id, state.users);
+                        message.data.adminName = adminIdToName(message.data.admin_id, state.admins);
+                        localDispatch({type: "UPDATE_TICKET", payload: message.data})
+                        localDispatch({type: "SET_CURRENT_TICKET", payload: message.data});
+                        break;
                     case "assign_ticket":
                         message.data.statusText = statusToText(message.data.status);
                         message.data.userName = userIdToName(message.data.user_id, state.users);
@@ -494,16 +531,60 @@ const PageMessenger: React.FC = () => {
                         <div className={'border border-gray-300 p-4'}>
                             <h1 className={'font-bold text-xl'}>{state.currentTicket?.title}</h1>
                             <p className={'whitespace-pre-line'}>{state.currentTicket?.description}</p>
-                            <p>Status: {state.currentTicket?.statusText}</p>
-                            <button
-                                className={'border border-gray-300 p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
-                                onClick={closeTicket}
+                            <br/>
+                            <p
+                                className={`w-fit + ${state.currentTicket?.status === 2
+                                    ? 'bg-green-200'
+                                    : state.currentTicket?.status === 1
+                                        ? 'bg-yellow-200'
+                                        : 'bg-red-200'}
+                                `}
                             >
-                                Close ticket
-                            </button>
-                            <p>Initiator: {state.currentTicket?.userName}</p>
-                            <p>Assigned: {state.currentTicket?.adminName || 'None'}</p>
-                            <p>Date: {state.currentTicket ? dateToString(new Date(String(state.currentTicket.created_at))) : 'Loading...'}</p>
+                                Status: {state.currentTicket?.statusText}
+                            </p>
+                            {state.currentTicket?.status === 2
+                                ? <button
+                                    className={'border border-gray-300 p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                                    onClick={reopenTicket}
+                                >
+                                    Reopen ticket
+                                </button>
+                                : <button
+                                    className={'border border-gray-300 p-2 cursor-pointer hover:bg-gray-300 transition-colors duration-200'}
+                                    onClick={closeTicket}
+                                >
+                                    Close ticket
+                                </button>
+                            }
+                            <br/>
+                            <br/>
+                            <p>User:</p>
+                            <p>Fullname: {state.currentTicket?.userName || 'None'}</p>
+                            <p>Department: {getUserById(state.currentTicket?.user_id)?.department || 'None'}</p>
+                            <p>Post: {getUserById(state.currentTicket?.user_id)?.post || 'None'}</p>
+                            <p>
+                                Local workplace:
+                                {getUserById(state.currentTicket?.user_id)?.local_workplace || 'None'}
+                            </p>
+                            <p>
+                                Remote workplace:
+                                {getUserById(state.currentTicket?.user_id)?.remote_workplace || 'None'}
+                            </p>
+                            <p>Phone: {getUserById(state.currentTicket?.user_id)?.phone || 'None'}</p>
+                            <p>Cellular: {getUserById(state.currentTicket?.user_id)?.cellular || 'None'}</p>
+                            <br/>
+                            <p className={'w-fit bg-yellow-200'}>Admin:</p>
+                            {state.currentTicket?.admin_id ? (<>
+                                <p>Fullname: {state.currentTicket?.adminName || 'None'}</p>
+                                <p>Department: {getAdminById(state.currentTicket?.admin_id)?.department || 'None'}</p>
+                                <p>Post: {getAdminById(state.currentTicket?.admin_id)?.post || 'None'}</p>
+                                <p>Phone: {getAdminById(state.currentTicket?.admin_id)?.phone || 'None'}</p>
+                                <p>Cellular: {getAdminById(state.currentTicket?.admin_id)?.cellular || 'None'}</p>
+                            </>) : <p>None</p>}
+                            <br/>
+                            <p className={'text-right'}>
+                                {dateToString(new Date(String(state.currentTicket.created_at)))}
+                            </p>
                             {state.currentTicketFiles.length > 0 && (
                                 <div className={'border border-gray-300 p-2 space-y-2'}>
                                     {state.currentTicketFiles.map((ticketFile, index) => (
@@ -530,9 +611,30 @@ const PageMessenger: React.FC = () => {
                                 !message.solved
                             ) {
                                 return (
-                                    <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
                                             [Admin] {message.adminName} marked ticket as Pending
+                                        </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
+                                        </div>
+                                    </div>
+                                )
+                            }
+                            if (!message.admin_id &&
+                                message.text === '' &&
+                                !message.admin_connected &&
+                                !message.admin_disconnected &&
+                                !message.in_progress &&
+                                !message.solved
+                            ) {
+                                return (
+                                    <div key={index} className={'border border-gray-300 p-4'}>
+                                        <div className={'whitespace-pre-line'}>
+                                            {message.userName} marked ticket as Pending
+                                        </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
                                         </div>
                                     </div>
                                 )
@@ -545,9 +647,12 @@ const PageMessenger: React.FC = () => {
                                 !message.solved
                             ) {
                                 return (
-                                    <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
                                             [Admin] {message.adminName} marked ticket as In progress
+                                        </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
                                         </div>
                                     </div>
                                 )
@@ -560,18 +665,24 @@ const PageMessenger: React.FC = () => {
                                 message.solved
                             ) {
                                 return (
-                                    <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
                                             [Admin] {message.adminName} marked ticket as Solved
+                                        </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
                                         </div>
                                     </div>
                                 )
                             }
                             if (message.admin_connected) {
                                 return (
-                                    <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
                                         <div className={'whitespace-pre-line'}>
                                             [Admin] {message.adminName} connected
+                                        </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
                                         </div>
                                     </div>
                                 )
@@ -582,22 +693,37 @@ const PageMessenger: React.FC = () => {
                                         <div className={'whitespace-pre-line'}>
                                             {message.userName} marked ticket as Solved
                                         </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
+                                        </div>
                                     </div>
                                 )
                             }
                             if (message.admin_id) {
                                 return (
-                                    <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div key={index} className={'border border-gray-300 p-4 bg-yellow-200'}>
+                                        <div>
+                                            [Admin] {message.adminName}:
+                                        </div>
                                         <div className={'whitespace-pre-line'}>
-                                            [Admin] {message.adminName}: {message.text}
+                                            {message.text}
+                                        </div>
+                                        <div className={'w-full text-right'}>
+                                            {dateToString(new Date(String(message.created_at)))}
                                         </div>
                                     </div>
                                 )
                             }
                             return (
                                 <div key={index} className={'border border-gray-300 p-4'}>
+                                    <div>
+                                        {message.userName}:
+                                    </div>
                                     <div className={'whitespace-pre-line'}>
-                                        {message.userName}: {message.text}
+                                        {message.text}
+                                    </div>
+                                    <div className={'w-full text-right'}>
+                                        {dateToString(new Date(String(message.created_at)))}
                                     </div>
                                 </div>
                             )

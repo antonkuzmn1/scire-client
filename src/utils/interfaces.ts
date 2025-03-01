@@ -82,6 +82,8 @@ export interface Message {
     in_progress: boolean;
     solved: boolean;
     files: MessageFile[];
+    created_at: string | null;
+    updated_at: string | null;
 }
 
 export interface Ticket {
