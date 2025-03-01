@@ -215,6 +215,7 @@ const PageMessenger: React.FC = () => {
         const description = state.currentTicket.description.trim();
         if (!title || !description) {
             dispatch(setAppError('Title and Description required'));
+            return;
         }
 
         dispatch(setAppLoading(true));

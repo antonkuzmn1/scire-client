@@ -172,13 +172,13 @@ const PageMe: React.FC = () => {
                     <div className={"w-full fixed bottom-0 left-0 flex justify-center"}>
                         <div className={"flex min-h-12 w-full max-w-xl bg-white border border-gray-300"}>
                             <button
-                                className={"flex items-center justify-center w-full hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
+                                className={"flex items-center justify-center w-full cursor-pointer hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
                                 onClick={() => navigate('/')}
                             >
                                 Back
                             </button>
                             <button
-                                className={"flex items-center justify-center w-full hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
+                                className={"flex items-center justify-center w-full cursor-pointer hover:bg-gray-300 transition-colors duration-200 text-gray-600"}
                                 onClick={logout}
                             >
                                 Log out
